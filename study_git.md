@@ -1,4 +1,6 @@
-## 생활코딩 - 지옥에서 온 Git
+# 생활코딩 - 지옥에서 온 Git
+
+## git의 기본사용
 * git 시작하기
 	1. init: git init으로 현재 폴더에서 git을 시작
 	2. clone
@@ -44,3 +46,7 @@
 	- `git commit -a` : 수정하고 삭제한 파일은 자동으로 add 하고 commit 함.
 	- `git commit -m 메시지` : 메시지를 vim을 켜지않고 inline에서 작성함.
 	- `git commit -am` : 수정,삭제 파일을 add 하고 commit하며 메시지도 줄 수 있다.
+
+## git의 원리
+
+------ 원리 - 분석도구 gistoty 소개 부터 들으면됨. (0510)
