@@ -32,6 +32,7 @@
 		- `git diff` 만 치면 이전 커밋 이후에 내가 작업한 코드의 차이점을 보여줌.
 
 *github을 이용하면 git log를 굳이 사용하지 않을듯*
+이라고 생각했으나.. 로컬 레포에서 커밋하고 push 하기 전에 `git log -p`를 이용해서 미리 수정 내용을 확인하는 것이 유용했음.
 
 * 과거로 돌아가기
 	- `git reset 커밋아이디 --hard`
@@ -49,4 +50,44 @@
 
 ## git의 원리
 
------- 원리 - 분석도구 gistoty 소개 부터 들으면됨. (0510)
+### git add의 원리
+
+`git add`를 하면
+- index 생성 : 파일 이름 포함. 파일마다 따로 하는 것이 아니라 한 파일에 모든 이름이 다 들어가있음.
+- objects 생성 : 파일 내용 포함. 파일마다 따로 생성됨.
+- 파일을 복사하면 어떻게 될까?
+ 	- 파일의 이름이 달라도 파일의 내용이 같으면 같은 object를 가리킨다. index에는 다른 이름으로 들어감.
+
+### objects 파일명의 원리
+
+objects는 내용이 같으면 어떻게 파일명이 같을까?
+
+- `sha1` hash 알고리즘을 통해 파일명이 만들어진다.
+	- 두글자를 떼서 디렉토리를 만들고, 그 다음 글자를 따서 파일명을 만드는 원리
+	- git은 파일 내용뿐 아니라 다른 정보도 추가해서 hash 알고리즘을 통과시킨다.
+
+### commit의 원리
+
+- commit 메시지 정보가 마치 objects로 저장됨.
+
+- commit 정보 파일의 내용
+	- commit한 사람
+	- commit 메시지
+	- tree와 parent
+		- tree : commit에 대한 정보. 커밋마다 다름. 각 버전마다의 스냅샷을 tree로 가지고 있는 것.
+		- parent : 이전 커밋의 내용
+
+### objects의 종류
+
+- blob : 파일의 내용을 담음
+- tree : 디렉토리의 이름과 파일내용인 blob 대한 정보를 담고 있음.
+- commit : commit 내용을 담고 있음.
+
+### git 작업 단계 - 로컬
+
+1. working directory
+	- 실제 코딩을 진행하는 곳
+2. staging area 혹은 index
+	- git add를 한 후에 commit을 기다리고 있는 단계에 있는 곳
+3. repository
+	- git commit을 한 후의 장소
