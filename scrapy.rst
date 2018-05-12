@@ -90,7 +90,7 @@ XPath(XML Path Language)는 W3C의 표준으로 확장 생성 언어 문서의 �
 
   3. ``*`` : 조건에 맞는 앞부분의 하위 element 모두 살펴봄.
 
-  - css selector의 space 한칸과 동일한 역할.
+    - css selector의 space 한칸과 동일한 역할.
 
   4. element [조건]
 
