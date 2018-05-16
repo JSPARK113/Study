@@ -1,8 +1,10 @@
-===========================
-ORM 튜토리얼
-===========================
+=================================
+SQLAlchemy -  ORM 튜토리얼
+=================================
 
-참고: https://veranostech.github.io/docs-korean-sqlalchemy/doc/build/output/html/orm/tutorial_ko.html
+`참고 문서`__
+
+.. __: https://veranostech.github.io/docs-korean-sqlalchemy/doc/build/output/html/orm/tutorial_ko.html
 
 .. Contents::
 
@@ -111,6 +113,7 @@ ORM 튜토리얼
 Session 클래스를 `sessionmaker()`\ 를 통해 정의한다.
 
 ::
+
   >>> from sqlalchemy.orm import sessionmaker
   >>> Session = sessionmaker(bind=engine)
 
@@ -130,7 +133,7 @@ Session에 `add()`\ 를 통해 객체를 추가한다.
 
 이 시점에 인스턴스는 `pending` 상태다.
 
-  참고: `객체 상태에 대한 간단한 소개`__.
+  참고: `객체 상태에 대한 간단한 소개`__
 
   .. __: https://veranostech.github.io/docs-korean-sqlalchemy/doc/build/output/html/orm/session_state_management_ko.html#session-object-states
 
