@@ -1,4 +1,4 @@
-### 공부한 내용 정리
+## 공부한 내용 정리
 
 - 리스트럭처드 텍스트 : https://github.com/JSPARK113/Study/blob/master/RST_example.rst
 
