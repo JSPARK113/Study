@@ -113,7 +113,7 @@ Git에서도 Alias를 만들 수 있다.
 Git 브랜치
 ===========================
 
-원래 코드와 상관없이 독립적으로 개발하는 것
+**브랜치 : 원래 코드와 상관없이 독립적으로 개발하는 것**
 
 Git의 데이터 저장방식
 -----------------------------
@@ -127,3 +127,151 @@ Commit하면 git은 커밋개체(Commit Object)를 저장한다.
     2. tree : 디렉토리의 이름과 파일내용인 blob 대한 정보를 담고 있음.
 
     3. commit : commit 내용을 담고 있음.
+
+브랜치 생성하기
+----------------------------------
+
+`git branch <브랜치명>`\ 으로 브랜치를 생성한다.
+
+브랜치는 `HEAD`\ 라는 포인터를 가지고 있다. 이 포인터는 지금 작업하는 로컬 브랜치를 가리킨다.
+`git branch <브랜치명>` 명령은 브랜치를 만들기만 하고 옮기진 않는다.
+
+`git log --decorate` : `--decorate` 옵션은 브랜치가 어떤 commit을 가리키는지 확인
+
+::
+
+  $ git log --oneline --decorate
+  f30ab (HEAD -> master, testing) add feature #32 - ability to add new formats to the central interface
+  34ac2 Fixed bug #1328 - stack overflow under certain conditions
+  98ca9 The initial commit of my project
+
+브랜치 관리하기
+-----------------------------------
+
+* `git branch` : 브랜치 목록보기
+
+* `git branch -v` : 브랜치 목록을 마지막 commit 메시지와 함께 보기
+
+* `git branch --merged` : 이미 merge한 브랜치 목록 확인.
+  ``*`` 표시가 없는 브랜치는 다른 브랜치와 merge 했기 때문에 삭제해도 정보를 잃지 않는다.
+
+* `git branch --no-merged` : merge 하지 않은 브랜치 목록 확인.
+
+* `git branch -d <브랜치명>` : merge 된 브랜치 삭제하기(merge 안된 브랜치는 삭제 안됨)
+
+* `git branch -D <브랜치명>` : merge 안 된 브랜치 강제로 삭제하기
+
+브랜치를 바꿔서 작업하기
+-----------------------------------
+
+`git checkout <브랜치명>` : 해당 브랜치로 이동한다. `HEAD`\ 가 해당 브랜치를 가리킨다.
+
+브랜치를 옮기고 작업하면, 작업한 내용은 해당 브랜치에만 반영된다.
+단, **commit을 해야 변경된 내용이 해당 브랜치에만 반영된다.** commit을 하지 않고 브랜치를 옮기면,
+옮긴 다른 브랜치에도 작업한 내용이 반영된다.
+
+  참고: `git stash`\ 를 이용하면, commit 하기 전의 내용을 임시 저장할 수 있다.
+
+`git log --oneline --decorate --graph --all` : 히스토리 출력
+
+예::
+
+  $ git log --oneline --decorate --graph --all
+  * c2b9e (HEAD, master) made other changes
+  | * 87ab2 (testing) made a change
+  |/
+  * f30ab add feature #32 - ability to add new formats to the
+  * 34ac2 fixed bug #1328 - stack overflow under certain conditions
+  * 98ca9 initial commit of my project
+
+브랜치 Merge 하기
+-------------------------------
+
+아래 그림의 예에는 브랜치가 3개 있다. `master`, `hotfix`, 'iss53'
+
+.. image:: ./image/branch_merge.png
+  :scale: 80 %
+
+(출처: Pro-git Book)
+
+현재 상황에서 `hotfix`와 `iss53` 브랜치에서 각각 commit이 이뤄졌고,
+2개 브랜치가 새로 생성된 이후에 `master` 브랜치에서는 commit이 이뤄지지 않았다.
+
+이 상황에서 각 브랜치의 작업 내역을 master 브랜치에 merge 한다.
+
+1. hotfix의 작업내용을 master 브랜치에 Merge 한다.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+`fast-forward` 방식
+
+1. master 브랜치로 checkout 한다. : `git checkout master`
+
+2. hotfix의 내용을 merge 한다. : `git merge hotfix`
+
+  실행코드::
+
+    $ git checkout master
+    $ git merge hotfix
+    Updating f42c576..3a0874c
+    Fast-forward
+    index.html | 2 ++
+    1 file changed, 2 insertions(+)
+
+master는 hotfix로 갈라진 이후에 작업 내역이 없으므로, 그냥 master의 최신 commit의 위치를
+가리키는 포인터를 hotfix의 최신 commit 위치로 바꿔주기만 하면 된다.
+이걸 **fast-forward**\ 라고 한다. 실제 쉘 상에도 fast-forward라고 나오는 것을 확인할 수 있다.
+
+hotfix 브랜치는 작업이 완료됐으니 삭제하고, 결과를 보면 아래 그림과 같은 상태가 된다.
+
+.. image:: ./image/branch_merge2.png
+  :scale: 80 %
+
+
+2. 1번을 완료한 후 master 브랜치에 iss53 브랜치 작업 내용을 merge 한다.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`iss53` 브랜치에서 새로 작업 후 다시 한번 commit을 하면 아래와 같은 상태가 된다.
+
+.. image:: ./image/branch_merge3.png
+  :scale: 80 %
+
+이 상태에서 master에 iss53 브랜치의 작업내역을 merge 하는 방법은 1번과 비슷하다.
+하지만, 합쳐야 할 master와 iss53 브랜치의 각 마지막 commit이 같은 선상에 있지 않으므로
+1번과 같이 단순히 포인터를 옮기는 것만으로는 merge할 수 없다.
+
+이때는 두 commit 내용을 합친 별도의 commit을 만들어줘야 한다.
+
+이 과정에서 3개의 commit이 활용된다. 이 3개 commit을 합쳐서 새로운 commit을 만든다.
+
+  1. master의 최신 commit(위 그림의 C4)
+
+  2. iss53의 최신 commit(위 그림의 C5)
+
+  3. master와 iss53의 공통 조상(위 그림의 C2)
+
+실제코드::
+
+  $ git checkout master
+  Switched to branch 'master'
+  $ git merge iss53
+  Merge made by the 'recursive' strategy.
+  README |    1 +
+  1 file changed, 1 insertion(+)
+
+merge를 완료하면 아래와 같은 상태가 된다.
+
+.. image:: ./image/branch_merge4.png
+  :scale: 80 %
+
+브랜치 충돌
+----------------------
+
+merge 하는 두 브랜치에서 같은 파일을 동시에 수정하면, merge가 안되고 Conflict(충돌)메시지를 출력한다.
+
+충돌 예::
+
+  $ git merge iss53
+  Auto-merging index.html
+  CONFLICT (content): Merge conflict in index.html
+  Automatic merge failed; fix conflicts and then commit the result.
+
+이런 경우에 자동으로 merge가 안되니, 충돌된 부분을 수동으로 고치고 merge 해야 한다.
