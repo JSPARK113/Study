@@ -8,4 +8,6 @@
 
 - Scrapy : https://github.com/JSPARK113/Study/blob/master/scrapy.rst
 
-- git 생활코딩 강의 : https://github.com/JSPARK113/Study/blob/master/study_git.md
+- Git
+  - 생활코딩 강의 : https://github.com/JSPARK113/Study/blob/master/study_git.md
+  - Pro Git : https://github.com/JSPARK113/Study/blob/master/git_progit.rst
