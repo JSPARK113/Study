@@ -191,6 +191,7 @@ Commit하면 git은 커밋개체(Commit Object)를 저장한다.
 
 .. image:: ./image/branch_merge.png
   :scale: 80 %
+  :align: center
 
 (출처: Pro-git Book)
 
@@ -224,7 +225,7 @@ hotfix 브랜치는 작업이 완료됐으니 삭제하고, 결과를 보면 아
 
 .. image:: ./image/branch_merge2.png
   :scale: 80 %
-
+  :align: center
 
 2. 1번을 완료한 후 master 브랜치에 iss53 브랜치 작업 내용을 merge 한다.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -233,6 +234,7 @@ hotfix 브랜치는 작업이 완료됐으니 삭제하고, 결과를 보면 아
 
 .. image:: ./image/branch_merge3.png
   :scale: 80 %
+  :align: center
 
 이 상태에서 master에 iss53 브랜치의 작업내역을 merge 하는 방법은 1번과 비슷하다.
 하지만, 합쳐야 할 master와 iss53 브랜치의 각 마지막 commit이 같은 선상에 있지 않으므로
@@ -261,6 +263,7 @@ merge를 완료하면 아래와 같은 상태가 된다.
 
 .. image:: ./image/branch_merge4.png
   :scale: 80 %
+  :align: center
 
 브랜치 충돌
 ----------------------
