@@ -187,7 +187,7 @@ Commit하면 git은 커밋개체(Commit Object)를 저장한다.
 브랜치 Merge 하기
 -------------------------------
 
-아래 그림의 예에는 브랜치가 3개 있다. `master`, `hotfix`, `iss53'
+아래 그림의 예에는 브랜치가 3개 있다. `master`, `hotfix`, `iss53`
 
 .. image:: ./image/branch_merge.png
   :scale: 80 %
