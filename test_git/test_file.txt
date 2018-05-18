@@ -1,7 +1,0 @@
-test message
-
-메시지를 수정함.
-
-master 브랜치에서 수정한 내용
-
-testing 브랜치에서 수정한 내용
