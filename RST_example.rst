@@ -140,6 +140,9 @@ height부터는 부가적인 사항
   :alt: alternate text
 
 
+다음 단계
+------------------------------
+
 여기까지가 리스트럭처드텍스트의 기본적인 사용법
 
   - 다음단계: `빠른 reStructuredText`_ 유저 레퍼런스
@@ -149,3 +152,35 @@ height부터는 부가적인 사항
    https://veranostech.github.io/docs-korean-docutils/docutils/docs/user/rst/quickref_ko.html
 .. _reStructuredText 마크업 설명서:
    https://veranostech.github.io/docs-korean-docutils/docutils/docs/ref/rst/restructuredtext_ko.html
+
+링크 걸기
+-------------------------------
+
+1. 문장 안에 URL 포함하기 : ```Python <http://www.python.org/>`_.``
+
+- 결과 : `Python <http://www.python.org/>`_.
+
+2. 링크 명 걸지 않고 연결하기. 반드시 한 줄을 띄어야 한다.
+
+::
+
+  Internal crossreferences, like example_.
+
+  .. _example:http://www.python.org/
+
+- 결과: Internal crossreferences, like example_.
+
+.. _example: http://www.python.org/
+
+3. 두 단어 이상의 절을 넣을 때는 `` 사이에 넣어준다.
+
+::
+
+  Python_ is `my favourite programming language`_.
+
+  .. _my favourite programming language: http://www.python.org/
+
+
+- 결과 : Python_ is `my favourite programming language`_.
+
+.. _my favourite programming language: http://www.python.org/
