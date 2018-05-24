@@ -176,11 +176,11 @@ height부터는 부가적인 사항
 
 ::
 
-  Python_ is `my favourite programming language`_.
+  Python is `my favourite programming language`_.
 
   .. _my favourite programming language: http://www.python.org/
 
 
-- 결과 : Python_ is `my favourite programming language`_.
+- 결과 : Python is `my favourite programming language`_.
 
 .. _my favourite programming language: http://www.python.org/
