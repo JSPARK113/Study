@@ -4,6 +4,8 @@ postgreSQL
 
 .. Contents::
 
+* postgreSQL를 설치하는 가장 간단한 방법은 `postgre.app`\ 을 설치하는 것.
+
 Chapter 3 : Basic SQL Commands
 ========================================
 
@@ -36,6 +38,10 @@ DB 안에는 Table이 있다.
 
 - `INSERT` 명령문 사용해서 데이터 입력
 
+  예::
+
+    insert into people values ('mark',25);
+
   - string 타입은 반드시 홑따옴표(\')를 써야함. 쌍따옴표(\")는 작동 안함.
 
   - string 상태로 따옴표 안에 들어가지 않는 한, 공백, 대문자는 안지켜도 됨.
@@ -52,6 +58,10 @@ DB 안에는 Table이 있다.
 
 - `SELECT`\ 와 함께, `WHERE`\ 를 사용하면 특정 조건에 맞는 row를 볼 수 있다.
 
+  예::
+
+    select * from people where age=25;
+
 3.6 Removing Data with DELETE
 ------------------------------------
 
@@ -66,6 +76,11 @@ DB 안에는 Table이 있다.
 
 `UPDATE`
 
+- `UPDATE people SET age = 20 WHERE name = 'sue';`
+
+  - name이 'sue'인 행의 age를 20로 변경(UPDATE)한다.
+
+
 3.8 Sorting Data with ORDER BY
 ------------------------------------------
 
@@ -74,6 +89,8 @@ DB 안에는 Table이 있다.
   - 'SELECT * FROM friend ORDER BY age DESC'
 
     - friend 테이블을 age에 대해 내림차순으로 정렬해서 보여준다.
+
+  - `ASC` : 오름차순
 
   - `DESC` : 내림차순
 
@@ -197,7 +214,7 @@ Chapter 4 : Customizing Queries
 4.8 Range of VALUES
 ---------------------------------
 
-- 사이의 값을 보고 싶으면 `BETWEEN 값1 AND 값2` 사용
+- 사이의 값을 보고 싶으면 WHERE 절에 `BETWEEN 값1 AND 값2` 사용
 
 4.9 LIKE Comparison
 ---------------------------------
@@ -231,3 +248,120 @@ Chapter 4 : Customizing Queries
 
 4.11 CASE Clause
 --------------------------------
+
+age가 30 미만이면 ages에 20s라고 표시하고 아니면 30s라고 표시하기::
+
+  SELECT name, age,
+  CASE
+    WHEN age < 30 then '20s'
+    ELSE '30s'
+  END
+  AS ages
+  FROM people;
+
+
+4.12 Distinct Rows
+------------------------------------
+
+`DISTINCT` : 중복제거
+
+- `select distinct age from people;`
+
+  people의 age 컬럼에 있는 모든 값들에 대해 unique 값만 뽑아줌.
+
+
+4.13 Functions and Operators
+----------------------------------
+
+
+- Functions 함수
+
+  - 0개 이상의 인수를 받을 수 있고, 1개의 값을 반환한다.
+
+  - `psql`\ 의 `\df` 명령어: 모든 함수의 리스트(반환값, 함수명, 인수)
+
+  - `psql`\ 의 `\dd` 명령어: 함수의 이름, 설명
+
+- Operators 연산자
+
+  - 함수와 다른 점들이 있음
+
+    - 이름이 아니라 symbol임
+
+    - 보통 2개의 인수를 받음
+
+    - 보통 인수는 연산자 양옆에 있음.
+
+
+4.14 SET, SHOW, and RESET
+--------------------------------------
+
+- SET
+
+- SHOW
+
+- RESET
+
+
+Chapter 5 : SQL Aggregates
+=======================================
+
+5.1 Aggregates
+---------------------------
+
+WHERE 절과 함께 사용
+
+- COUNT, SUM, MAX, MIN, AVG
+
+  * COUNT는 모든 행에서 사용가능, 나머지는 특정 컬럼에서 사용 가능
+
+  * NULL 값은 무시되지만, 모든 값이 NULL이면 결과도 NULL로 나온다.
+    (Count는 NULL 값도 무시하지 않고 계산한다.)
+
+
+5.2 Using GROUP BY
+------------------------------
+
+friend 테이블에서 state 컬럼을 기준으로 그룹화하여 age에 대해 min, max, avg를 구한다::
+
+  SELECT state, MIN(age), MAX(age), AVG(age)
+  FROM friend
+  GROUP BY state
+  ORDER BY 4 desc;
+
+5.3 Using HAVING
+-------------------------
+
+aggreate한 값에 대해서 조건을 걸어줌.
+
+state 기준으로 count한 값에 대해서 1 초과인 것만 뽑음::
+
+  SELECT state, COUNT(*)
+  FROM friend
+  GROUP BY state
+  HAVING COUNT(*) > 1
+  ORDER BY state;
+
+5.4 Query Tips
+-------------------------
+
+- 하나의 쿼리에 여러 절을 사용할 때, 각 절을 다른 줄에 쓰는 것이 좋다.
+
+- UPDATE, DELETE, INSERT와 같은 쿼리는 데이터베이스를 수정하기 때문에 조심해야한다.
+
+  - 실행하기 전에 미리 같은 WHERE 절을 미리 SELECT에서 실행해서 확인해보는 것이 좋다.
+
+
+Chapter 6 : Joining Tables
+=======================================
+
+여러 테이블에서 데이터 가져오기
+
+6.1 Table and Column References
+-----------------------------------------
+
+FROM 절에서 테이블 이름의 alias를 정할 수 있다.
+
+friend 테이블의 alias를 f로 정함::
+
+  SELECT f.firstname FROM friend f WHERE f.state = ’PA’;
