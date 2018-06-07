@@ -503,7 +503,7 @@ friend 테이블의 alias를 f로 정함::
   WHERE c.customer_id = 648 AND
         c.zipcode = c2.zipcode;
 
-`customer_id`\ 가 648인 customer와 `zipcode`\ 가 같은 customer의 `name`을 select
+`customer_id`\ 가 648인 customer와 `zipcode`\ 가 같은 customer의 `name`\ 을 select
 
 
 6.11 Non-equijoins
@@ -523,10 +523,125 @@ friend 테이블의 alias를 f로 정함::
 6.13 Primary and Foreign Keys
 --------------------------------------
 
-- `primay key`: 각 테이블에서 join이 될 기준이 되는 고유한 컬럼(예: 고객 정보에서의 고객 아이디)
+- `primary key`: 각 테이블에서 join이 될 기준이 되는 고유한 컬럼(예: 고객 정보에서의 고객 아이디)
 
 - `Foreign key`: 복사해올 때 기준이 되는 값(예: 주문서에서 고객 아이디)
 
 
 Chapter 7 : Numbering Rows
 =======================================
+
+7.1 Object Identification Numbers (OIDs)
+--------------------------------------------
+
+- OID는 자동으로 부여된다.
+
+- 데이터베이스가 생성, 삭제돼도 OID의 카운터는 계속 올라가기 때문에 중복이 생길 수 없다.
+
+- 모든 postgreSQL는 OID 컬럼을 자동 생성한다.
+
+- oid는 primary key나 Foreign key로 사용할 수 있다.
+
+- 참고: 직접 실행해 본 바로는 oid도 생성되도록 따로 설정해줘야 하는 것 같다.
+
+
+7.2 Object Identification Number Limitations
+-------------------------------------------------------
+
+OID의 3가지 제한 사항
+
+- 연속적으로 번호가 매겨지지 않는다.
+
+- 수정할 수 없다. INSERT 하면 생성되고, UPDATE로도 수정할 수 없다.
+
+- 데이터베이스 백업 시 OID는 자동으로 백업되지 않는다. OID도 백업하려면 플래그를 추가해줘야 한다.
+
+
+7.3 Sequences
+---------------------------------
+
+- `Sequence` : 사용자가 만든 카운터
+
+- Sequence를 이용하면, INSERT에 대해서 고유한 숫자가 자동으로 부여된다.
+
+- 함수
+
+  - `nextval('name')`: 다음 사용 가능한 숫자를 반환하고, 카운터를 갱신한다.
+
+  - `currval('name')`: 이전의 `nextval('name')` 함수의 이전 값을 반환한다. 증가시키진 않는다.
+
+  - `setval('name', 'newval')`: 지정된 값에 다음 숫자 카운터를 세팅한다.
+
+- `Sequence`\ 의 좋은 점은 숫자 할당 간의 갭을 없앨 수 있다는 것이다. (OID는 연속 값이 아닌 것과 비교해서)
+
+  - 다른 테이블과 카운터를 공유하지 않기 때문에 갭이 없어진다.
+
+- 한 테이블 안에서만 고유하다. 테이블마다 카운터가 있기 때문에, A테이블에서 16이 있으면 B테이블에도 16이 있을 수 있다.
+
+
+7.4 Creating Sequences
+---------------------------------
+
+- Sequence는 OID처럼 자동으로 생성되지 않는다.
+
+- `CREATE SEQUENCE 시퀀스이름` 사용
+
+  - 직접 생성해보면, `Sequences`\ 에 생성되는 것을 볼 수 있다.
+
+  - `nextval()`, `currval()`, `setval()`
+
+예) 아래를 차례대로 실행하고 결과를 보자::
+
+  CREATE SEQUENCE functest_seq;
+  SELECT nextval(’functest_seq’); -- 결과: 1
+  SELECT nextval(’functest_seq’); -- 결과: 2
+  SELECT currval(’functest_seq’); -- 결과: 2
+  SELECT setval(’functest_seq’, 100); -- 결과: 100
+  SELECT nextval(’functest_seq’); -- 결과: 101
+
+
+7.5 Using Sequences to Number Rows
+------------------------------------------
+
+
+- Sequence를 행 번호로 사용하는 방법
+
+  1. Sequence를 생성한다.
+
+  2. 테이블을 만들 때, 컬럼 디폴트로 `nextval()`\ 를 정의한다.
+
+  3. INSERT 할 때, 해당 컬럼은 지정하지 않거나, `nextval()` 함수만 사용해서 지정한다.
+
+  예::
+
+    -- 시퀀스 생성
+    CREATE SEQUENCE customer_seq;
+
+    -- customer 테이블 생성
+    CREATE TABLE customer (
+                 customer_id INTEGER DEFAULT nextval('customer_seq'),
+                 name VACH(30)
+    );
+
+    -- 값 INSERT
+    INSERT INTO customer VALUES (nextval(’customer_seq’), ’Bread Makers’);
+    INSERT INTO customer (name) VALUES (’Wax Carvers’);
+    INSERT INTO customer (name) VALUES (’Pipe Fitters’);
+
+7.6 Serial Column Type
+-------------------------------------
+
+- `SERIAL` 타입 컬럼 : Sequence가 자동으로 생성되고, 적절한 `DEFAULT`\ 가 설정된다.
+
+
+7.7 Manually Numbering Rows
+-------------------------------------
+
+- 왜 수동으로 이런 숫자들을 부여하지 않는가?
+
+  - Performance: 성능. 부여할 다음 값을 찾는 것이 오래걸릴 수 있음(수동이든 자동이든)
+
+  - Concurrency: 중복 발생 위험.
+    사용자들끼리 다음 값을 부여할 때 충돌이 일어날 수 있음.(동시에 같은 값을 사용-> 고유하지 X)
+
+  - Standardization: 수동으로 부여하는 것보다 이런 방법을 쓰는게 더 안정적이고 확실하다.
