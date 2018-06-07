@@ -357,6 +357,8 @@ Chapter 6 : Joining Tables
 
 여러 테이블에서 데이터 가져오기
 
+- SELECT, FROM, WHERE을 이용해서 join한 테이블 가져오기
+
 6.1 Table and Column References
 -----------------------------------------
 
@@ -365,3 +367,166 @@ FROM 절에서 테이블 이름의 alias를 정할 수 있다.
 friend 테이블의 alias를 f로 정함::
 
   SELECT f.firstname FROM friend f WHERE f.state = ’PA’;
+
+
+6.2 Joined Tables
+-------------------------
+
+- 테이블을 여러개로 나누는 것의 장점
+
+  - 수정이 용이
+
+  - 데이터 찾기가 용이
+
+  - 데이터가 한 곳에만 저장됨.
+
+  - 저장 공간이 더 적게 필요함.
+
+
+6.3 Creating Joined Tables
+--------------------------------------
+
+- 각 테이블의 primary key를 정해줌. 보통은 언더스코어(_)를 사용해서(예: `customer_id`)
+
+- postgreSQL은 컬럼이나 테이블 이름 등의 모든 식별자를 소문자로 인식한다.
+
+  - 굳이 대문자를 쓰고 싶으면 쌍따옴표(")로 감싸주면 된다. 하지만 항상 쌍따옴표를 써야하기 때문에 번거로워진다.
+
+  - 식별자는 문자로 시작해야하고, 부호는 언더스코어(_)만 사용할 수 있다.
+
+
+6.4 Performing Joins
+--------------------------------------
+
+- 아래 예는 `salesorder` 테이블의 `order_id` 컬럼을 가져온다.
+
+- salesorder 테이블과 customer 테이블을 함께 사용했다.
+
+- 조건 :
+
+  - customer.name이 ’Fleer Gearworks, Inc.’
+
+  - `alesorder.customer_id = customer.customer_id`
+
+::
+
+  SELECT salesorder.order_id
+  FROM salesorder, customer
+  WHERE customer.name = ’Fleer Gearworks, Inc.’ AND
+        salesorder.customer_id = customer.customer_id;
+
+- 위의 예에서 `customer_id`\ 는 `customer` 테이블과 `alesorder` 테이블 모두에 있어야 한다.
+
+  - 그렇지 않으면, `ERROR: Column \'customer_id\' is ambiguous.` 에러가 나옴.
+
+
+6.5 Three- and Four-Table Joins
+------------------------------------------
+
+3개 테이블의 컬럼을 참조하는데 AS절을 이용해서 컬럼 이름 명시::
+
+  SELECT customer.name AS customer_name,
+         employee.name AS employee_name,
+         part.name AS part_name
+  FROM   salesorder, customer, employee, part
+  WHERE  salesorder.customer_id = customer.customer_id AND
+         salesorder.employee_id = customer.employee_id AND
+         salesorder.part_id = customer.part_id AND
+         salesorder.order_id = 14673;
+
+6.6 Additional Join Possibilities
+------------------------------------------
+
+
+6.7 Choosing a Join Key
+-----------------------------------
+
+- join key : 테이블 간에 행을 연결해주는 기준
+
+- 문자보다 숫자를 join key로 사용하는 것이 좋은 이유
+
+  - 숫자는 틀릴 위험이 적다.
+
+  - 이름 같은 경우 동명이인이 있으면 join 할 때 구별할 수 없다.
+
+  - (위에 이어서)고객 이름이 바뀌면, 이름을 참조한 모든 것들도 바꿔줘야 한다.
+
+  - 숫자로 join 하는 것이 긴 문자에 대해 join 하는 것보다 훨씬 효율적이다.
+
+  - 숫자가 문자보다 더 적은 용량을 차지한다.
+
+- join key로는 아래 두가지를 사용하는 것이 좋다.
+
+  - 숫자
+
+  - 짧은 코드(문자, 숫자 포함): 특히 코드를 사용하는 것이 좋다.
+
+    - 다만 아래의 경우에는 아닐 수도 있다.
+
+      - 해당 코드의 사용주기가 짧을 때 (예)주문번호 등)
+
+      - 쓸만한 적당한 코드를 만들 수 없을 때
+
+      - 코드를 내부에서만 사용하고, 외부 사용자는 사용 안할 때
+
+
+6.8 One-to-Many Joins
+----------------------------------
+
+- `one-to-one join` : 두 테이블 다 해당 행이 하나씩만 있는 경우
+
+- `one-to-many join` : 한 테이블의 한 행이 다른 테이블에는 여러 행에 사용됨.
+
+  - 예: 한 사용자가 여러 주문을 함.
+
+- `one-to-none join` : 한 테이블에 있는 행이 다른 테이블에서는 안 쓰임.
+
+  - 예: 사용자가 있는데, 주문한 것은 없음.
+
+
+6.9 Unjoined Tables
+---------------------------------
+
+- Cartesian product : WHERE 절을 사용하지 않고 그냥 FROM 절에서 2개 테이블을 가져오면
+  모든 행에 대해서 정보를 다 합치는 곱집합(Cartesian product)이 나온다.
+
+  - 이걸 의도하는 경우는 거의 없다.
+
+
+6.10 Table Aliases and Self-joins
+------------------------------------------
+
+`self-join` 사용 예(`customer`\ 를 `c`\ 와 `c2`\ 로 2번 사용)::
+
+  SELECT c2.name
+  FROM customer c, customer c2
+  WHERE c.customer_id = 648 AND
+        c.zipcode = c2.zipcode;
+
+`customer_id`\ 가 648인 customer와 `zipcode`\ 가 같은 customer의 `name`을 select
+
+
+6.11 Non-equijoins
+------------------------------------
+
+- Equijoins : equality(=)를 이용한 가장 일반적인 join.
+
+- non-equijoins : not equlal(<>)을 이용한 join
+
+
+6.12 Ordering Multiple Parts
+--------------------------------------
+
+- 여러 개의 테이블에서 조건을 가져와서 join 할 수 있다.
+
+
+6.13 Primary and Foreign Keys
+--------------------------------------
+
+- `primay key`: 각 테이블에서 join이 될 기준이 되는 고유한 컬럼(예: 고객 정보에서의 고객 아이디)
+
+- `Foreign key`: 복사해올 때 기준이 되는 값(예: 주문서에서 고객 아이디)
+
+
+Chapter 7 : Numbering Rows
+=======================================
