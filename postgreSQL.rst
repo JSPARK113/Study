@@ -645,3 +645,379 @@ OID의 3가지 제한 사항
     사용자들끼리 다음 값을 부여할 때 충돌이 일어날 수 있음.(동시에 같은 값을 사용-> 고유하지 X)
 
   - Standardization: 수동으로 부여하는 것보다 이런 방법을 쓰는게 더 안정적이고 확실하다.
+
+
+Chapter 8 : Combining SELECTs
+=======================================
+
+8.1 UNION, EXCEPT and INTERSECT Clauses
+---------------------------------------------
+
+- `SELECT`\ 와 함께 사용할 수 있다.
+
+  - 원래 2개 이상의 테이블에서 2개 이상의 SELECT를 하면 하나의 쿼리에 그걸 다 넣을 수 없는데,
+    UNION 등의 절을 사용하면 여러 select를 하나의 쿼리에 넣을 수 있다.
+
+  - 예를 들어, A테이블에서는 사과를 좋아하는 사람의 이름을 B테이블에서는 오렌지를 좋아하는 사람을 뽑는다.
+    이때, A와 B 테이블은 전혀 다른 형식이라 join 할 수 없다고 가정한다.
+    이런 경우에는 합집합을 이용해서 각각의 select 결과를 합해준다.
+
+  - 단, 그 컬럼들의 형태는 같아야 한다. A테이블의 select 결과가 한 개의 이름 컬럼이면,
+    B테이블에서도 한개의 이름 컬럼이 나와야 적용을 할 수 있다.
+    B테이블에서는 이름 하나, 나이 하나 해서 총 2개의 컬럼이 나오면 안된다.
+
+- 합집합 : `UNION`, `UNION ALL`
+
+- 교집합 : `INTERSECT`, `INTERSECT ALL`
+
+- 차집합 : `EXCEPT`, `EXCEPT ALL`
+
+- `ALL`\ 이 붙어있으면 중복을 제거하지 않고 모두 보여줌. 즉, `ALL`\ 이 없으면 결과에서 중복을 제거하고 보여준다.
+
+`UNION ALL`\ 의 예::
+
+  SELECT name
+  FROM aquatic_animal
+  UNION ALL
+  SELECT name
+  FROM terrestrial_animal;
+
+- 교집합, 차집합도 모두 비슷하게 사용한다.
+
+
+8.2 Subqueries
+-----------------------------
+
+- 서브쿼리는 SELECT를 연속으로 사용하는 것(chaining)과 비슷하다.
+
+- SELECT chaining은 쿼리를 같은 레벨로 결합하지만, 서브쿼리는 SELECT가 그 안에 쿼리를 갖게 한다.
+
+- 여러 함수의 역할을 할 수 있다.
+
+  - They can take the place of a constant.
+
+  - They can take the place of a constant yet vary based on the row being processed.
+
+  - They can return a list of values for use in a comparison.
+
+Subqueries as Constants
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- 서브쿼리(혹은 subselect라고도 부름)는 쿼리에서 상수(constant)를 대체할 수 있다.
+
+  - 단, 상수는 변하지 않지만, 서브쿼리는 쿼리가 실행될 때마다 계산된다.
+
+  예(위의 쿼리를 서브쿼리를 이용해서 아래처럼 표현)::
+
+    SELECT f1.firstname, f1.lastname, f1.state
+    FROM   friend f1, friend f2
+    WHERE  f1.state <> f2.state And
+           f2.firstname = ’Dick’ AND
+           f2.lastname = ’Gleason’
+    ORDER BY firstname, lastname;
+
+    -- 서브쿼리 사용
+    SELECT f1.firstname, f1.lastname, f1.state
+    FROM friend f1
+    WHERE f1.state <> (
+                       SELECT f2.state
+                       FROM friend f2
+                       WHERE f2.firstname = ’Dick’ AND
+                             f2.lastname = ’Gleason’
+                      )
+    ORDER BY firstname, lastname;
+
+Subqueries as Correlated Values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Correlated Value: 계산되고 있는 행에 따라 달라진다. 모든 행에 대해 반복적으로 계산된다.
+
+  - 보통 서브쿼리는 한번만 실행되고, 그 결과가 메인쿼리에서 사용된다.
+
+
+  예::
+
+    SELECT f1.firstname, f1.lastname, f1.age
+    FROM friend f1, friend f2
+    WHERE f1.state = f2.state
+    GROUP BY f2.state, f1.firstname, f1.lastname, f1.age  HAVING f1.age = max(f2.age)
+    ORDER BY firstname, lastname;
+
+    -- 서브쿼리 사용
+    SELECT f1.firstname, f1.lastname, f1.age
+    FROM friend f1
+    WHERE age = (
+                  SELECT MAX(f2.age)
+                  FROM friend f2
+                  WHERE f1.state = f2.state -- 서브쿼리 밖에 있는 f1을 이용
+                )
+
+
+Subqueries as Lists of Values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- 서브쿼리가 하나의 값이 아닌 여러 값의 리스트를 반환할 수 있음.
+
+  salesorder 테이블의 order_date가 ’7/19/1994’인
+  employee_id를 찾아 employee.name을 반환하는 예::
+
+    -- join 사용
+    SELECT DISTINCT employee.name
+    FROM employee, salesorder
+    WHERE employee.employee_id = salesorder.employee_id AND
+          salesorder.order_date = ’7/19/1994’;
+
+    -- 서브쿼리 사용
+    SELECT name
+    FROM employee
+    WHERE employee_id IN (
+                          SELECT employee_id
+                          FROM salesorder
+                          WHERE order_date = '7/19/1994'
+                          );
+
+  아래 예는 서브쿼리에서 해당 조건을 만족하는 employee_id의 리스트를 반환하고,
+  그 리스트에 있는 employee_id에 대한 employee 테이블의 name을 select 한다.
+
+
+NOT IN and Subqueries with NULL Values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`NOT IN` 서브쿼리가 NULL 값을 반환하면, `NOT IN` 비교는 항상 false를 반환한다.
+
+  예::
+
+    SELECT name
+    FROM customer
+    WHERE customer_id NOT IN (
+                              SELECT customer_id
+                              FROM salesorder
+                              WHERE customer_id IS NOT NULL
+                             );
+
+  서브쿼리에 `WHERE customer_id IS NOT NULL`\ 를 추가해서
+  서브쿼리의 결과에 NULL이 포함되는 것을 막을 수 있다.
+
+Subqueries Returning Multiple Columns
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ANY, ALL, and EXISTS Clauses
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+8.3 Outer Joins
+-----------------------------
+
+- `outer join` : 보통의 join과 비슷하지만, join이 안되는 행까지 포함된다.
+
+  - 합집합과 같이 key 값에 없는 값도 포함해서 join한다.
+
+  - 값이 없는 경우에는 NULL로 남겨둔다.
+
+  UNION ALL을 이용해 Outer Join을 하는 예::
+
+    SELECT name, order_id
+    FROM customer, salesorder
+    WHERE customer.customer_id = salesorder.customer_id
+    UNION ALL
+    SELECT name, NULL
+    FROM customer
+    WHERE customer.customer_id NOT IN (SELECT customer_id FROM salesorder)
+    ORDER BY name;
+
+
+8.4 Subqueries in Non-SELECT Queries
+-------------------------------------------------
+
+UPDATE와 DELETE 문에서 서브쿼리를 사용할 수도 있다.
+
+
+8.5 UPDATE with FROM
+-------------------------------------------------
+
+- UPDATE를 사용할 때, 다른 테이블의 값을 쓰는 것도 가능하다.
+
+  - 사용하려는 테이블을 FROM 절에 써주면 된다.
+
+  예::
+
+    UPDATE salesorder
+    SET order_date = employee.hire_date
+    FROM employee
+    WHERE salesorder.employee_id = employee.employee_id AND
+          salesorder.order_date < employee.hire_date;
+
+  위에서 employee 테이블을 FROM 절에서 써줬기 때문에 SET, WHERE 절에서 사용할 수 있다.
+
+
+8.6 Inserting Data Using SELECT
+-------------------------------------------------
+
+INSERT 문에서 SELECT 문 사용하기
+
+예::
+
+  INSERT INTO customer (name, city, state, country)
+  SELECT lastname, city, state, ’USA’
+  FROM friend
+
+
+8.7 Creating Tables Using SELECT
+-------------------------------------------------
+
+`SELECT...INTO` 문으로 테이블을 만들 수 있다.
+
+예::
+
+  SELECT firstname, lastname, city, state
+  INTO newfriend
+  FROM friend;
+
+- friend 테이블에서 firstname, lastname, city, state 컬럼을 가져와서 그 결과를 newfriend 테이블에 넣어줬다.
+
+- AS 절을 사용하면 컬럼 이름도 변경할 수 있다.
+
+
+Chapter 9 : Data Types
+=======================================
+
+9.1 Purpose of Data Types
+-----------------------------------
+
+- 데이터 타입을 사용하는 이유
+
+  - 일관적인 결과
+
+  - 데이터 유효성
+
+  - 적은 저장공간
+
+  - 좋은 성능
+
+
+9.2 Installed Types
+---------------------------
+
+<postgreSQL에서 제공하는 데이터타입>
+
+.. image:: ./image/postgresql_data_type.png
+  :scale: 75 %
+  :align: center
+
+<Geometric types>
+
+.. image:: ./image/postgresql_data_type_geometric.png
+  :scale: 75 %
+  :align: center
+
+9.3 Type Conversion Using CAST
+---------------------------------------
+
+- 값을 INTEGER로 바꾸기: `CAST(val AS INTEGER)`
+
+- 컬럼을 TEXT로 바꾸기: `CAST(date_col AS TEXT)`
+
+
+9.4 Support Functions
+----------------------------------
+
+- postgreSQL는 많은 함수를 지원 한다.
+
+  - 예) `upper()`: 모든 컬럼의 값을 대문자로 바꾸고 싶을 때 사용. 인수로 컬럼을 받는다.
+
+- 함수 목록은 psql의 `\\df`\ 로 확인
+
+
+9.5 Support Operators
+----------------------------------
+
+- 연산자는 함수와 비슷
+
+- 연산자 목록은 psql의 `\\df`\ 로 확인
+
+
+9.6 Support Variables
+----------------------------------
+
+<common variables>
+
+.. image:: ./image/postgresql_data_type_geometric.png
+  :scale: 75 %
+  :align: center
+
+9.7 Arrays
+----------------------------------
+
+postgreSQL는 배열(Array)도 지원한다. 모든 차원의 배열이 가능하다.
+
+
+9.8 Large Objects (BLOBs)
+----------------------------------
+
+사진과 같이 크기가 큰 파일도 다룰 수 있다. 다만, 특정 데이터타입에 담는 것은 아니다.
+
+-  `lo_import()`, `lo_export()` 함수를 이용한다.
+
+
+Chapter 10 : Transactions and Locks
+=======================================
+
+10.1 Transactions
+----------------------------------
+
+- Transactions(트랜잭션) : 여러 행에 대해서 쿼리를 실행할 때, 한 행에라도 쿼리가 실행되지 않고 실행이 끝났다면 전체 행에도 모두 반영되지 않는다.
+
+  - 즉, 모든 행에 쿼리가 제대로 실행되면, 비로소 데이터베이스에도 반영된다.
+
+
+10.2 Multistatement Transactions
+-------------------------------------
+
+- 여러 명령문에 걸쳐서 Transaction을 지정할 수도 있다.
+
+- 두 개 명령문이 하나만 실행되면 안되는 경우에(실행되려면 둘 다 되고, 실패하려면 둘 다 실패해야 함.) 필요하다.
+
+- 예::
+
+    BEGIN WORK;
+    쿼리
+    COMMIT WORK;
+
+
+10.3 Visibility of Committed Transactions
+-----------------------------------------------
+
+- Transaction이 완료(commit)되기 전까지는 다른 사용자에게 보이지 않는다!는 것이 또다른 장점.
+
+- 완벽하게 실행되고, commit되기 전까지는 그것을 다른 사람들은 볼 수 없다.
+
+
+
+10.4 Read Committed and Serializable Isolation Levels
+-----------------------------------------------------
+
+- 내 트랜잭션이 작동하고 있을때, 다른 트랜잭션의 행동을 볼 수 있다.
+
+  - `READ COMMITTED` : 기본 레벨 Read-committed isolation level
+
+  - `TRANSACTION ISOLATION LEVEL SERIALIZABLE` : Serializable isolation level
+
+
+10.5 Locking
+----------------
+
+- `Exclusive locks`(혹은 `write locks`) : 사용자가 행이나 전체 테이블을 수정할 수 없게 하는 것.
+
+  - 수정 중인 row는 동시에 수정할 수 없는 등의 제한
+
+- isolation level로 조절할 수 있음.
+
+- `LOCK`\ 을 통해서 수동으로 조절할 수도 있음(자세한 내용은 매뉴얼 참고)
+
+
+10.6 Deadlocks
+--------------------
+
+- `Deadlock` 교착상태 : 풀 수 없는 잠금
+
+  - 예: 2개의 트랜잭션이 서로 잠금을 걸고, 서로 잠금이 풀리기를 기다린다.
