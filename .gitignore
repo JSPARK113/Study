@@ -2,8 +2,11 @@
 .DS_Store
 legacy/
 
+# ignore directory
+ignore_files/
+
 # ipython jupyter notebook files
-*.ipynb
+# *.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
