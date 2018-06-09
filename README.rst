@@ -8,7 +8,11 @@
 
   - postgreSQL : https://github.com/JSPARK113/Study/blob/master/postgreSQL.rst
 
-  - SQLAlchemy : https://github.com/JSPARK113/Study/blob/master/SqlAlchemy.rst
+  - SQLAlchemy
+
+    - ORM 튜토리얼: https://github.com/JSPARK113/Study/blob/master/SqlAlchemy.rst
+
+    - Core 튜토리얼: https://github.com/JSPARK113/Study/blob/master/sqlalchemy_core_tutorial.ipynb
 
   - Alembic : https://github.com/JSPARK113/Study/blob/master/Alembic.rst
 
