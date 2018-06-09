@@ -2,9 +2,10 @@
 postgreSQL
 ===========================
 
-.. Contents::
+.. Contents:: 목차
+   :depth: 2
 
-* postgreSQL를 설치하는 가장 간단한 방법은 `postgre.app`\ 을 설치하는 것.
+* postgreSQL를 설치하는 가장 간단한 방법은 `postgre.app`\ 을 설치하는 것이다.
 
 Chapter 3 : Basic SQL Commands
 ========================================
@@ -1021,3 +1022,359 @@ Chapter 10 : Transactions and Locks
 - `Deadlock` 교착상태 : 풀 수 없는 잠금
 
   - 예: 2개의 트랜잭션이 서로 잠금을 걸고, 서로 잠금이 풀리기를 기다린다.
+
+
+Chapter 11 : Performance
+=======================================
+
+11.1 Indexes
+--------------------
+
+- 특정 조건의 행을 찾을 때, 조건을 통해서 모든 row를 살펴보는 것보다 인덱스를 지정해주는 것이 훨씬 빠르다.
+
+- 인덱스는 자동으로 만들어지지 않는다.
+
+  - `CREATE INDEX` 명령을 통해 만들어짐.
+
+    customer 테이블의 customer_id 컬럼에 인덱스를 붙이는 경우::
+
+      CREATE INDEX customer_custid_idx ON customer (customer_id);
+
+- 인덱스는 원하는만큼 만들 수 있으나, 너무 많이 만들면 디스크 공간을 차지하고 성능도 나빠진다.
+
+  - row가 바뀌면 인덱스도 업데이트를 해야해서 성능에 영향을 줄 수 있다.
+
+- multicolumn 인덱스는 중복값이 있는 컬럼에 사용하면 좋다.
+
+  - customer 테이블에서 age, gender 컬럼으로 인덱스 생성::
+
+      CREATE INDEX customer_age_gender_idx ON customer (age, gender);
+
+  - 위의 예에서 생성된 인덱스는 age를 기준으로 row를 찾을 때는 좋다.
+
+  - 그러나 gender를 기준으로 찾을 때는 사용할 수 없다. 먼저 써준 컬럼인 age를 기준으로 생성된 인덱스이기 때문.
+
+- `DROP INDEX` : 인덱스 삭제
+
+
+11.2 Unique Indexes
+----------------------
+
+- `UNIQUE`\ 를 이용하면 인덱스를 고유한 값으로 만들 수 있다.
+
+- 예::
+
+    CREATE UNIQUE INDEX duptest_channel_idx ON duptest (channel);
+
+
+11.3 CLUSTER
+-------------------
+
+- `CLUSTER` : 테이블을 인덱스 기준으로 재정렬
+
+- 중복 값이 같은 경우에 이 값들을 묶어주는 역할을 하기 때문에 같은 값들을 더 빨리 찾을 수 있게 해줌.
+
+
+11.4 VACUUM
+----------------------
+
+- row가 update나 delete 되면, 그 이전 값들을 모아놓는 데, 그것을 청소하는 명령
+
+  - `VACUUM` : 데이터베이스의 모든 테이블을 청소
+
+  - `VACUUM tablename` : 특정 테이블만 청소
+
+
+11.5 VACUUM ANALYZE
+----------------------
+
+- `VACUUM ANALYZE` : `VACUUM` 명령어와 똑같은데, 관련 통계까지 보여주는 것만 다르다.
+
+
+11.6 EXPLAIN
+------------------------
+
+- `EXPLAIN` : 쿼리가 어떻게 동작하는지 보여준다.
+
+  - 쿼리와 컬럼 상태에 따라서, 어떤 때는 'sequential scan'을 하고 어떤 때는 'index scan'을 한다.
+
+예::
+
+  test=> EXPLAIN SELECT customer_id FROM customer;
+  NOTICE: QUERY PLAN:
+
+  Seq Scan on customer (cost=0.00..15.00 rows=1000 width=4)
+
+  EXPLAIN
+
+  test=> EXPLAIN SELECT * FROM customer ORDER BY customer_id;
+  NOTICE: QUERY PLAN:
+
+  Index Scan using customer_custid_-
+  idx on customer (cost=0.00..42.00 rows=1000 width=4)
+
+  EXPLAIN
+
+
+Chapter 12 : Controlling Results
+=======================================
+
+12.1 LIMIT
+--------------------
+
+- `LIMIT` : 절은 반환하는 행의 수를 제한한다.
+
+- `OFFSET` : 반환할 row의 위치를 지정한다.
+
+- 보통은 `ORDER BY`\ 와 같이 사용한다. 그렇지 않으면 랜덤한 row를 얻게 된다.
+
+- 필수는 아니지만 적은 row를 가져오니까 속도는 빨라진다.
+
+- 998행부터 3개만 보고 싶으면::
+
+    SELECT customer_id FROM customer ORDER BY customer_- id LIMIT 3 OFFSET 997;
+
+
+12.2 Cursors
+--------------------
+
+- `SELECT` 쿼리에 이름을 붙여서 각 결과 행이 사용자의 필요에 따라 선택될 수 있게 해준다.
+
+- 트랜잭션 안에서 작동한다.
+
+- `DECLARE...CURSOR FOR SELECT....`\ 를 통해서 커서를 선언한다.
+
+- `FETCH`: 결과 row를 가져온다.
+
+- `MOVE`: 커서 위치를 바꾼다.
+
+- `CLOSE`: 커서에 있는 행을 모두 닫는다.
+
+
+Chapter 13 : Table Management
+=======================================
+
+13.1 Temporary Tables
+------------------------
+
+- `CREATE TEMPORARY TABLE`: 임시 테이블 생성
+
+  - `psql`\ 이 끝나면 임시 테이블은 없어진다.
+
+- 임시 테이블은 그것을 생성한 세션에게만 보인다. 다른 사용자에게는 보이지 않는다.
+
+  - 같은 이름의 임시테이블을 여러 사용자가 동시에 생성하고 사용해도 문제 없다.
+
+- 여러개의 SELECT 문을 실행할 때, 그 결과를 임시 테이블에 저장해서 사용할 수 있다.
+
+  - 충돌의 위험 없이 사용할 수 있다.
+
+
+13.2 ALTER TABLE
+---------------------------------
+
+- `ALTER TABLE`\ 은 아래와 같은 일을 할 수 있다.
+
+  - 테이블 이름 변경
+
+  - 컬럼 이름 변경
+
+  - 컬럼 추가
+
+  - 컬럼 디폴트 추가
+
+  - 컬럼 디폴트 제거
+
+
+13.3 GRANT and REVOKE
+---------------------------------
+
+- `GRANT`: 테이블에 엑세스할 수 있는 권한을 변경
+
+  - 권한은 개인사용자, 그룹, 모든사용자(PUBLIC)에게 부여 가능.
+
+- `REVOKE`: 권한 제거
+
+13.4 Inheritance
+---------------------------------
+
+- Inheritance: 기존 테이블과 관련된 새로운 테이블 생성
+
+- 테이블 이름 끝에 ``*``\ 를 붙여주면 부모와 자식 테이블에 모두 엑세스할 수 있음.
+
+  예::
+
+    SELECT * FROM parent_test*;
+
+
+13.5 Views
+---------------------
+
+- View : 실제 테이블에서 특정 컬럼이나 행만 볼 수 있게 만들어 놓은 가짜 테이블.
+
+  - 권한을 view마다 따로 부여할 수 있다.
+
+- `CREATE VIEW` 명령으로 view 생성
+
+- `DROP VIEW`: view 삭제
+
+- view는 INSERT, UPDATE, and DELETE가 작동하지 않는다.
+
+
+13.6 Rules
+-------------------------
+
+- Rule : SELECT, INSERT, UPDATE, DELETE의 작동 수정할 수 있다.
+
+- Rule에는 두가지 타입 존재
+
+  - DO rules: 이 기능은 해당 쿼리에 기능에 추가적으로 실행된다.
+
+  - DO INSTEAD rules: 해당 쿼리의 기능을 버리고 이 rule로 대체한다.
+
+- rule 생성 예::
+
+    -- INSERT rule
+    CREATE RULE view_realtable_insert AS
+    ON INSERT TO view_realtable
+    DO INSTEAD
+      INSERT INTO realtable
+      VALUES (new.col);
+
+    -- UPDATE rule
+    CREATE RULE view_realtable_update AS
+    ON UPDATE TO view_realtable
+    DO INSTEAD
+      UPDATE realtable
+      SET col = new.col
+      WHERE col = old.col;
+
+    -- DELETE rule
+    CREATE RULE view_realtable_delete AS
+    ON DELETE TO view_realtable
+    DO INSTEAD
+    DELETE FROM realtable
+    WHERE col = old.col;
+
+13.7 LISTEN and NOTIFY
+---------------------------
+
+- DB가 변경되는 등에 대한 알람을 받을 수 있다.
+
+  - `LISTEN`
+
+  - `NOTIFY`
+
+Chapter 14 : Constraints
+=======================================
+
+14.1 NOT NULL
+----------------------------
+
+- `NOT NULL` : 컬럼 안에 NULL 값이 들어올 수 없게 한다.
+
+- `NOT NULL`\ 로 지정된 컬러에는 NULL 값을 insert 하거나 update 할 수 없다.
+
+
+14.2 UNIQUE
+------------------------
+
+- `UNIQUE` : 중복을 허용하지 않는다.
+
+- 2개 이상의 컬럼에 대해서도 고유값을 지정할 수 있다.
+
+  - col1과 col2에 대해서 unique 지정::
+
+      CREATE TABLE uiquetest (
+                              col1 INTEGER,
+                              col2 INTEGER,
+                              UNIQUE (col1, col2)
+                             );
+
+
+14.3 PRIMARY KEY
+------------------------
+
+- `PRIMARY KEY` : 고유하고, NULL이 없는 값
+
+  - `UNIQUE`, `NOT NULL`\ 이 결합
+
+- 생성 예::
+
+    CREATE TABLE primarytest (col INTEGER PRIMARY KEY);
+
+- foreign key로 사용되기도 한다.
+
+
+14.4 Foreign Key/REFERENCES
+------------------------------
+
+- 다른 테이블의 컬럼을 기반으로 값을 가져온다. 두 테이블을 연결하는 역할
+
+  - 다른 테이블의 컬럼 값을 기반으로 특정 값의 유효성을 '제한'하는 셈이다.
+
+    - 예를 들어 참조하는 테이블의 foreign key로 사용되는 컬럼에 없는 값을 넣으면,
+      유효하지 않은 값이라고 판단해 제대로 동작하지 않는다.
+
+Modification of Primary Key Row
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- 보통은 primary key가 다른 테이블의 foreign key로 걸려있으면 수정할 수 없게 돼있다.
+
+  - 옵션을 넣어주면 가능하다.
+
+    - `NO ACTION`: 디폴트. update나 delete 불가
+
+    - `CASCADE`
+
+      - `UPDATE`\ 와 함께 사용하면 해당 참조 foreign key를 다 변경된 값으로 바꿔줌.
+
+      - `DELETE`\ 와 함께 사용하면, 해당 foreign key를 다 같이 지워버림
+
+    - `SET NULL` : 참조한 내용을 다 NULL로 변경함.
+
+    - `SET DEFAULT`: primary key가 변경되면, foreign key가 디폴트로 설정된 값으로 변경된다.
+
+Multicolumn Primary Keys
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+2개 이상의 컬럼이 primary key로 사용되는 경우, foreign key를 지정하는 방법::
+
+  -- 2개 컬럼을 primary key로 사용하는 테이블
+  CREATE TABLE primarytest2 (
+                             col1 INTEGER,
+                             col2 INTEGER,
+                             PRIMARY KEY (col1, col2)
+                            );
+
+  -- 위 테이블의 primary key를 foreign key로 사용하는 테이블
+  CREATE TABLE foreigntest2 (
+                             col3 INTEGER,
+                             col4 INTEGER,
+                             FOREIGN KEY (col3, col4) REFERENCES primary-test2
+                            );
+
+
+Handling NULL Values in the Foreign Key
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- NULL 값은 foreign key로 사용할 수 없다.
+
+- 여러 컬럼을 foreign key로 사용하는 경우에 일부 행은 NULL일 수 있다.
+
+  - `MATCH FULL` 옵션: primary key의 모든 컬럼이 NULL인 것은 괜찮지만, 일부만 NULL인 것은 안된다.
+
+
+Frequency of Foreign Key Checking
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`DEFERRABLE`
+
+14.5 CHECK
+---------------------
+
+- 테이블을 만들 때 `CHECK`\ 를 사용하면 해당 컬럼의 제한 조건을 걸 수 있다.
+
+  예(age 컬럼은 INTEGER이고 0보다 크거나 같아야 한다.)::
+
+    age INTEGER CHECK(age >= 0)
