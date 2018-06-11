@@ -156,9 +156,9 @@ height부터는 부가적인 사항
 링크 걸기
 -------------------------------
 
-1. 문장 안에 URL 포함하기 : ```Python <http://www.python.org/>`_.``
+1. 문장 안에 URL 포함하기 : ```Python <http://www.python.org/>`_``
 
-- 결과 : `Python <http://www.python.org/>`_.
+- 결과 : `Python <http://www.python.org/>`_
 
 2. 링크 명 걸지 않고 연결하기. 반드시 한 줄을 띄어야 한다.
 

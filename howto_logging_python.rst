@@ -6,9 +6,9 @@
 
 참고:
 
-  - `로깅 하우투<https://veranostech.github.io/docs-korean-cpython/Doc/build/html/howto/logging_ko.html>`_
+  - `로깅 하우투 <https://veranostech.github.io/docs-korean-cpython/Doc/build/html/howto/logging_ko.html>`_
 
-  - `파이썬 로그 기능<https://veranostech.github.io/docs-korean-cpython/Doc/build/html/library/logging_ko.html>`_
+  - `파이썬 로그 기능 <https://veranostech.github.io/docs-korean-cpython/Doc/build/html/library/logging_ko.html>`_
 
 로깅: 어떤 소프트웨어가 실행될 때 발생하는 이벤트를 추적하는 수단
 
