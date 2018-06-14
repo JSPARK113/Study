@@ -918,13 +918,13 @@ Chapter 9 : Data Types
 
 <postgreSQL에서 제공하는 데이터타입>
 
-.. image:: ./image/postgresql_data_type.png
+.. image:: ../image/postgresql_data_type.png
   :scale: 75 %
   :align: center
 
 <Geometric types>
 
-.. image:: ./image/postgresql_data_type_geometric.png
+.. image:: ../image/postgresql_data_type_geometric.png
   :scale: 75 %
   :align: center
 
@@ -959,7 +959,7 @@ Chapter 9 : Data Types
 
 <common variables>
 
-.. image:: ./image/postgresql_data_type_geometric.png
+.. image:: ../image/postgresql_data_type_geometric.png
   :scale: 75 %
   :align: center
 

@@ -189,7 +189,7 @@ Commit하면 git은 커밋개체(Commit Object)를 저장한다.
 
 아래 그림의 예에는 브랜치가 3개 있다. `master`, `hotfix`, `iss53`
 
-.. image:: ./image/branch_merge.png
+.. image:: ../image/branch_merge.png
   :scale: 80 %
   :align: center
 
@@ -223,7 +223,7 @@ master는 hotfix로 갈라진 이후에 작업 내역이 없으므로, 그냥 ma
 
 hotfix 브랜치는 작업이 완료됐으니 삭제하고, 결과를 보면 아래 그림과 같은 상태가 된다.
 
-.. image:: ./image/branch_merge2.png
+.. image:: ../image/branch_merge2.png
   :scale: 80 %
   :align: center
 
@@ -232,7 +232,7 @@ hotfix 브랜치는 작업이 완료됐으니 삭제하고, 결과를 보면 아
 
 `iss53` 브랜치에서 새로 작업 후 다시 한번 commit을 하면 아래와 같은 상태가 된다.
 
-.. image:: ./image/branch_merge3.png
+.. image:: ../image/branch_merge3.png
   :scale: 80 %
   :align: center
 
@@ -261,7 +261,7 @@ hotfix 브랜치는 작업이 완료됐으니 삭제하고, 결과를 보면 아
 
 merge를 완료하면 아래와 같은 상태가 된다.
 
-.. image:: ./image/branch_merge4.png
+.. image:: ../image/branch_merge4.png
   :scale: 80 %
   :align: center
 
