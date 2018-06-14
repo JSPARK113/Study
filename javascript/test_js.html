@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>자바스크립트 연습</title>
+    <script>
+        window.onload = function () {
+            // 스톱워치
+            var startButton = document.getElementById("start");
+            var stopButton = document.getElementById("stop");
+            var display = document.getElementById("display");
+            var startTime, time;
+            startButton.onclick = start;
+            function start(){
+                startButton.onclick = null;
+                stopButton.onclick = stop;
+                startTime = new Date();
+                timer = setInterval(function() {
+                    var now = new Date()
+                    display.innerHTML = ((now - startTime)/1000).toFixed(2);
+                },10);
+            }
+            function stop() {
+                clearInterval(timer);
+                startButton.onclick = start;
+            }
+            // 메시지
+            document.getElementById("msgButton").onclick = function() {
+                var msg = document.getElementById("msg").value;
+                var place = document.getElementById("msgout");
+                place.innerHTML = msg;
+            }
+        };
+    </script>
+</head>
+<body>
+    <div>
+        <h3>스톱워치</h3>
+        <p id="display">0.00</p>
+        <p><input type="button" value="start" id="start"></p>
+        <p><input type="button" value="stop" id="stop"></p>
+    </div>
+    <br>
+    <div>
+        <h3>메시지 입력하기</h3>
+        <p><input type="text" id="msg"></p>
+        <p><input type="button" value="입력" id="msgButton"></p>
+        <p>입력한 메시지는 <output id="msgout"></output>입니다.</p>
+    </div>
+
+</body>
+</html>
