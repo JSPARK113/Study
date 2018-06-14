@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>DOM Event</title>
+        <style>
+            #mustache-pic {
+                position: absolute;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Part2. 인터렉티브 웹페이지 만들기</h2>
+        <h3>클릭 이벤트 발생</h3>
+        <div>고양이 사진을 클릭하면, 클릭한 곳으로 수염이 옮겨지게 하자</div>
+        <img id="cat-pic" src="https://www.kasandbox.org/programming-images/animals/cat.png" width="300" alt="cat photo">
+
+        <img id="mustache-pic" src="https://www.kasandbox.org/programming-images/misc/mustache.png" alt="mustache" width="100">
+
+        <h3>두번째 예제- 링크, 오디오</h3>
+        <div>링크를 클릭하면 새창을 띄우지 않고 연결된 링크의 소리가 나게 하자.</div>
+        <a id="ohnoes" href="https://www.kasandbox.org/programming-sounds/rpg/giant-no.mp3">What does Oh Noes say?</a>
+
+        <h3>세번째 예제 - mad lips</h3>
+        <div>단어를 입력하면 그 단어를 통해 이야기가 만들어지게 하자.</div>
+        <ul>
+            <li>Noun: <input type="text" id="noun"></li>
+            <li>Adjective: <input type="text" id="adjective"></li>
+            <li>Someone's Name: <input type="text" id="person"></li>
+        </ul>
+        <input type="button" value="이야기만들기" id="makeStory">
+        <div id="storyText">Story: </div>
+
+        <script>
+            var catPic = document.getElementById("cat-pic");
+            var onCatClick = function(e) {
+                console.log(e);
+                var stashePic = document.getElementById("mustache-pic");
+                stashePic.style.top = e.clientY - 20 + "px";
+                stashePic.style.left = e.clientX - 50+ "px";
+            };
+            catPic.addEventListener("click", onCatClick);
+
+        // 두번째 예제
+        // Step 1: Find the element we want the event on
+            var soundEl = document.getElementById("ohnoes");
+        // Step 2: Define the event listener function
+            var onSoundClick = function (e) {
+                e.preventDefault();
+                var audioEl = document.createElement("audio");
+                audioEl.src = "https://www.kasandbox.org/programming-sounds/rpg/giant-no.mp3";
+                audioEl.autoplay = true;
+                document.body.appendChild(audioEl);
+            };
+        // Step 3: Attach event listener to element
+            soundEl.addEventListener("click", onSoundClick);
+
+        // 세번째 예제
+            var storyButton = document.getElementById("makeStory");
+            var onStoryClick = function() {
+                var noun = document.getElementById("noun").value;
+                var adjective = document.getElementById("adjective").value;
+                var person = document.getElementById("person").value;
+                var story = document.getElementById("storyText");
+                story.innerHTML = "My name is " + person +". I like " + adjective + " " + noun + "."
+            };
+            storyButton.addEventListener("click", onStoryClick);
+
+
+        </script>
+    </body>
+</html>

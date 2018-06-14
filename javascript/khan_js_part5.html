@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Animating DOM</title>
+</head>
+<body>
+    <h3>카운트다운</h3>
+    <div>
+        <h1>Oh noes, the world will end in
+            <span id="countdown">3</span>
+            seconds!
+        </h1>
+        <input type="button" value="카운트다운 시작" id="countdownButton">
+    </div>
+
+
+    <script>
+    // Step 1. What element do we want to animate?
+    var restSecond = document.getElementById("countdown");
+    var countdownButton = document.getElementById("countdownButton");
+    // Step 2. What function will change it each time?
+    var countItDown = function () {
+        var currentTime = parseFloat(restSecond.textContent);
+        if(currentTime > 0) {
+            restSecond.textContent = currentTime - 1;
+        } else {
+            console.log("end");
+            window.clearInterval(timer);
+        }
+    }
+    // Step 3: Call that on an interval
+    var timer = function () { window.setInterval(countItDown, 1000); }
+    // 추가: click하면 카운트다운 시작
+    countdownButton.addEventListener("click", timer);
+    </script>
+
+</body>
+</html>
