@@ -3,37 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <title>Animating DOM</title>
+    <!-- 합쳐지고 최소화된 최신 CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h3>카운트다운</h3>
-    <div>
-        <h1>Oh noes, the world will end in
-            <span id="countdown">3</span>
-            seconds!
-        </h1>
-        <input type="button" value="카운트다운 시작" id="countdownButton">
+    <div class="container" style="background-color: #edf2f2; padding: 30px">
+
+        <h3>카운트다운</h3>
+
+            <h2>the world will end in
+                <span id="countdown">5</span>
+                seconds!
+            </h2>
+            <input type="button" class="btn btn-sm btn-primary" value="카운트다운 시작" id="countdownButton">
+            <input type="button" class="btn btn-sm btn-primary" value="리셋" id="resetButton">
     </div>
 
+    <div class="container" style="background-color: #e0dece; padding: 30px">
+        <h3>이미지 크기 변하게 만들기</h3>
+        <p>시작과 끝 너비를 입력하지 않으면 50, 200px이 자동으로 입력된다.</p>
+            <form class="form-inline">
+                <div class="form-group">
+                    <input type="number" class="form-control" id="startWidth" placeholder="시작너비">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-control" id="endWidth" placeholder="끝너비">
+                </div>
+                    <input type="button" class="btn btn-primary" value="시작" id="imageButton">
+            </form>
+
+        <div>
+            <img id="ohnoes" src="https://www.kasandbox.org/programming-images/creatures/OhNoes.png">
+        </div>
+    </div>
+
+    <div class="container" style="background-color: #edf2f2; padding: 30px">
+        <h3>스톱워치</h3>
+        <p>스톱워치 만들기</p>
+
+        <h2 id="stopWatch">0.00</h2>
+
+        <div>
+            <input type="button" value="START" class="btn btn-sm btn-primary" id="watchStartButton">
+            <input type="button" value="STOP" class="btn btn-sm btn-primary" id="watchStopButton">
+        </div>
+    </div>
+
+    <div class="container" style="background-color: #e0dece; padding: 30px">
+        <!-- Cat walking GIF from: http://www.anniemation.com/clip_art/graphics.html -->
+        <!--<img id="cat" src="https://www.kasandbox.org/programming-images/misc/cat-walk.gif">-->
+    </div>
 
     <script>
+    // ---카운트 다운-----
+
     // Step 1. What element do we want to animate?
     var restSecond = document.getElementById("countdown");
     var countdownButton = document.getElementById("countdownButton");
+    var resetButton = document.getElementById("resetButton");
     // Step 2. What function will change it each time?
-    var countItDown = function () {
+    var startCountdown = function () {
+        countdownButton.removeEventListener("click", startCountdown);
+        var countItDown = function () {
         var currentTime = parseFloat(restSecond.textContent);
         if(currentTime > 0) {
             restSecond.textContent = currentTime - 1;
         } else {
-            console.log("end");
             window.clearInterval(timer);
+            var now = new Date();
+            console.log("end: " + now);
         }
-    }
-    // Step 3: Call that on an interval
-    var timer = function () { window.setInterval(countItDown, 1000); }
+    };
+        // Step 3: Call that on an interval
+        var timer = window.setInterval(countItDown, 1000);
+    };
+    var countReset = function () {
+        countdownButton.addEventListener("click", startCountdown);
+        var currentTime = document.getElementById("countdown");
+        currentTime.innerHTML = 5;
+    };
     // 추가: click하면 카운트다운 시작
-    countdownButton.addEventListener("click", timer);
+    countdownButton.addEventListener("click", startCountdown);
+    // 추가2: 리셋버튼 click하면 카운트다운 리셋
+    resetButton.addEventListener("click", countReset);
+
+    // ---이미지 크기 변경-----
+    // Step 1. What element do we want to animate?
+    var ohNoes = document.getElementById("ohnoes");
+    ohNoes.style.width = "50px";
+
+    // Step 2. What function will change it each time?
+    var imageChange = function () {
+        var startWidth = parseFloat(document.getElementById("startWidth").value);
+        startWidth = startWidth || 50; // 값을 입력하지 않으면 50 입력
+        var endWidth = parseFloat(document.getElementById("endWidth").value);
+        endWidth = endWidth || 200; // 값을 입력하지 않으면 200 입력
+        var startTime = new Date().getTime();
+        var makeItBigger = function () {
+            var currTime = new Date().getTime();
+            var newWidth = (startWidth + ((currTime - startTime) / 1000) * 60); // 초당 60프레임
+            ohnoes.style.width = parseFloat(newWidth) + "px";
+
+            if (newWidth < endWidth) {
+                window.requestAnimationFrame(makeItBigger);
+            }
+        };
+        makeItBigger();
+    };
+    var imageButton = document.getElementById("imageButton");
+    imageButton.addEventListener("click", imageChange);
+
+    // ---스톱워치----
+    var watchStartButton = document.getElementById("watchStartButton");
+    var watchStopButton = document.getElementById("watchStopButton");
+    var watchStart = function () {
+        watchStartButton.removeEventListener("click", watchStart);
+        watchStartButton.value = "WATCH";
+        currTime = 0;
+        var stopWatch = document.getElementById("stopWatch");
+        timer = setInterval(function () {
+            currTime = currTime + 1/100;
+            stopWatch.innerText = currTime.toFixed(2);
+        },10);
+    };
+    var watchStop = function () {
+        watchStartButton.addEventListener("click", watchStart);
+        watchStartButton.value = "RESTART";
+        clearInterval(timer);
+    };
+
+    watchStartButton.addEventListener("click", watchStart);
+    watchStopButton.addEventListener("click", watchStop);
+
+    // 고양이 걸음 - 미완성
+    // 이 웹 페이지는 이미 애니메이션이 적용된 고양이가 있지만 단지 애니메이션 GIF입니다.
+    // 이 응용에서는 JS로 고양이가 화면을 끝까지 걸어가도록 만들어 보세요.
+    // walkTheCat 함수를 변경하여 고양이의 '왼쪽' 위치 프로퍼티를 갱신하고
+    // window.requestAnimationFrame함수로 이를 반복하여 호출하도록 만들어 보세요.
+    var catEl = document.getElementById("cat");
+    console.log(22)
+
+
+    var startTime = new Date().getTime();
+    var walkTheCat = function() {
+      var currTime = new Date().getTime();
+      var secondsElapsed = ((currTime - startTime)/1000);
+    };
+    catEl =
+    walkTheCat();
     </script>
 
 </body>
 </html>
+

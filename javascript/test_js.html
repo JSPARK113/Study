@@ -16,7 +16,7 @@
                 stopButton.onclick = stop;
                 startTime = new Date();
                 timer = setInterval(function() {
-                    var now = new Date()
+                    var now = new Date();
                     display.innerHTML = ((now - startTime)/1000).toFixed(2);
                 },10);
             }
