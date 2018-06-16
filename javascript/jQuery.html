@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery</title>
+
+</head>
+<body>
+    <li class="active">html</li>
+    <li id="active">css</li>
+    <li>javascript</li>
+    <input type="button" value="color" onclick="$('li').css('color', 'blue')">
+    <input type="button" value="color-black" onclick="$('li').css('color', 'black')">
+    <input type="button" value="color-red" onclick="$('.active').css('color', 'red')">
+    <input type="button" value="color-underline" onclick="$('#active').css('color', 'red').css('textDecoration', 'underline')">
+
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.min.js"
+      integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+      crossorigin="anonymous"></script>
+    <script>
+        // 자동으로 실행된다.
+        var li = $('li');
+        li.map(function (index, elem) {
+            console.log(index + 1, elem);
+            $(elem).css('color', 'blue');
+        })
+    </script>
+
+</body>
+</html>
