@@ -1,14 +1,25 @@
 <!DOCTYPE html>
 <head>
-    {% if ctx.title %}
-    <title>{{ ctx.title }} - Example Blog</title>
+    {% if title %}
+    <title>{{ title }} - Example Blog</title>
     {% else %}
     <title>Welcome to Example Blog</title>
     {% endif %}
 </head>
 <body>
-    <div>Example Blog: <a href="/index">Home</a></div>
+    Example Blog:
+    <div><a href="/index">Home</a></div>
+    <div><a href="/login">Login</a></div>
     <hr>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
 </body>
 </html>
