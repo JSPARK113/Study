@@ -8,8 +8,8 @@
 </head>
 <body>
     Example Blog:
-    <div><a href="/index">Home</a></div>
-    <div><a href="/login">Login</a></div>
+    <div><a href="{{ url_for('index') }}">Home</a></div>
+    <div><a href="{{ url_for('login') }}">Login</a></div>
     <hr>
     {% with messages = get_flashed_messages() %}
     {% if messages %}
