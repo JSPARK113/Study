@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>datepicker2</title>
+</head>
+<body>
+
+<script>
+
+    $(function() {
+        var dates = $('#from, #to').datepicker({
+            onSelect: function(selectedDate) {
+                var option = this.id =='from'?'minDate':'maxDate',
+                instance = $(this).data('datepicker'),
+                date = $.datepicker.parseDate(
+                    instance.settings.dateFormat || $.datepicker._defaults.dateFormat,
+                    selectedDate,
+                    instance.settings
+                );
+                dates.not( this ).datepicker('option',option,date);
+
+                // validate if we have both dates and get new series from server
+                if ($(dates[0]).datepicker('getDate') && $(dates[1]).datepicker('getDate')) {
+                    var from = $(dates[0]).datepicker("getDate");
+                    var to =   $(dates[1]).datepicker("getDate");
+
+
+                }
+            }
+        });
+    });
+
+</script>
+
+    <div>
+        <label for="from">Select Data</label>
+        <select name="data">
+            <option value="Sales Revenue">Sales Revenue</option>
+            <option value="Actual Profit">Actual Profit</option>
+        </select>
+        <label for="from">From</label>
+        <input type="text" id="from" name="from" size="15"/>
+        <label for="to">to</label>
+        <input type="text" id="to" name="to" size="15"/>
+    </div>
+    <p>
+        From: <div id="text1"></div>
+        To: <div id="text2"></div>
+    </p>
+</body>
+</html>
