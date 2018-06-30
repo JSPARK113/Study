@@ -484,4 +484,234 @@ Chapter 5: User Logins
 Password Hashing
 ---------------------
 
-- `Werkzeug`: password hasing 해주는 패키지
+- `Werkzeug`: password hasing 해주는 패키지, flask와는 독립된 모듈.
+
+  - `generate_password_hash`: hash 생성
+
+  - `check_password_hash`: hash 체크
+
+  - 예::
+
+      >>> from werkzeug.security import generate_password_hash, check_password_hash
+      >>> hash = generate_password_hash('foobar')
+      >>> check_password_hash(hash, 'foobar')
+
+- flask 적용. 모델의 `User` 클래스에 적용::
+
+  - app/models.py: Password hashing and verification::
+
+      from werkzeug.security import generate_password_hash, check_password_hash
+
+      # ...
+
+      class User(db.Model):
+          # ...
+
+          def set_password(self, password):
+              self.password_hash = generate_password_hash(password)
+
+          def check_password(self, password):
+              return check_password_hash(self.password_hash, password)
+
+  - 위처럼 적용하면 사용자 클래스에서 `set_password`\ 해서 패스워드를 생성하고,
+    `check_password`\ 를 통해서 해당 사용자의 패스워드가 맞는지 확인할 수 있다.
+
+
+Falsk에서 로그인 하기
+------------------------------
+
+- `Flask-Login`\ 을 사용한다.
+
+  - `pip install flask-login`\ 으로 설치한다.
+
+- app/__init__.py: Flask-Login initialization::
+
+    # ...
+    from flask_login import LoginManager
+
+    app = Flask(__name__)
+    # ...
+    login = LoginManager(app)
+
+    # ...
+
+- `UserMixin` 클래스를 `Flask-Login`\ 이 제공: 일반적인 유저 모델에 사용할 수 있음.
+
+  - app/models.py: Flask-Login user mixin class::
+
+      # ...
+      from flask_login import UserMixin
+
+      class User(UserMixin, db.Model):
+          # ...
+
+- Loader Function: DB에서 사용자 정보 가져오기
+
+  - `@login.user_loader` 데코레이터 사용
+
+  - app/models.py: Flask-Login user loader function::
+
+      from app import login
+      # ...
+
+      @login.user_loader
+      def load_user(id):
+          return User.query.get(int(id))
+
+-   view function에서 로그인 기능 구현하기
+
+  - app/routes.py: Login view function logic::
+
+      # ...
+      from flask_login import current_user, login_user
+      from app.models import User
+
+      # ...
+
+      @app.route('/login', methods=['GET', 'POST'])
+      def login():
+          if current_user.is_authenticated:
+              return redirect(url_for('index'))
+          form = LoginForm()
+          if form.validate_on_submit():
+              # User 클래스에서 해당 username을 가진 '첫번째' 데이터를 가져옴.
+              user = User.query.filter_by(username=form.username.data).first()
+              if user is None or not user.check_password(form.password.data):
+                  flash('Invalid username or password')
+                  return redirect(url_for('login'))
+              login_user(user, remember=form.remember_me.data)
+              return redirect(url_for('index'))
+          return render_template('login.html', title='Sign In', form=form)
+
+  - `is_authenticated`: 현재 사용자(`current_user`)가 로그인 상태인지 아닌지 파악
+
+  - `check_password`: 입력한 패스워드가 맞는지 체크
+
+  - username과 password가 둘 다 맞으면 `login_user` 함수 실행
+
+로그아웃
+-------------------
+
+- `logout_user()`: 실행 시 로그아웃
+
+- app/routes.py: Logout view function::
+
+    # ...
+    from flask_login import logout_user
+
+    # ...
+
+    @app.route('/logout')
+    def logout():
+        logout_user()
+        return redirect(url_for('index'))
+
+- 로그인 시 네비게이션 바에 로그아웃 버튼 생성
+
+  - app/templates/base.html: Conditional login and logout links::
+
+      <div>
+          Microblog:
+          <a href="{{ url_for('index') }}">Home</a>
+          {% if current_user.is_anonymous %}
+          <a href="{{ url_for('login') }}">Login</a>
+          {% else %}
+          <a href="{{ url_for('logout') }}">Logout</a>
+          {% endif %}
+      </div>
+
+  - `is_anonymous`: 유저가 로그인 하지 않았을 때 `True`
+
+로그인한 유저만 볼 수 있는 페이지 만들기
+------------------------------------------
+
+- 페이지를 보기(view) 전에 로그인한 사용자인지 확인
+
+  - app/__init__.py::
+
+      # ...
+      login = LoginManager(app)
+      login.login_view = 'login'
+
+  - `login` 변수는 함수
+
+- `@login_required` 데코레이터 사용 @view function
+
+- app/routes.py: @login\_required decorator::
+
+    from flask_login import login_required
+
+    @app.route('/')
+    @app.route('/index')
+    @login_required
+    def index():
+        # ...
+
+- 로그인 한 후 다음 페이지에 어떤 것을 보일 것인가?
+
+  - app/routes.py: Redirect to "next" page::
+
+      from flask import request
+      from werkzeug.urls import url_parse
+
+      @app.route('/login', methods=['GET', 'POST'])
+      def login():
+          # ...
+          if form.validate_on_submit():
+              user = User.query.filter_by(username=form.username.data).first()
+              if user is None or not user.check_password(form.password.data):
+                  flash('Invalid username or password')
+                  return redirect(url_for('login'))
+              login_user(user, remember=form.remember_me.data)
+              next_page = request.args.get('next')
+              if not next_page or url_parse(next_page).netloc != '':
+                  next_page = url_for('index')
+              return redirect(next_page)
+          # ...
+
+템플릿에 유저 정보 표시하기
+--------------------------------------
+
+- 현재 유저 표시하기
+
+  - app/templates/index.html: Pass current user to template::
+
+      {% extends "base.html" %}
+
+      {% block content %}
+          <h1>Hi, {{ current_user.username }}!</h1>
+          {% for post in posts %}
+          <div><p>{{ post.author.username }} says: <b>{{ post.body }}</b></p></div>
+          {% endfor %}
+      {% endblock %}
+
+
+가입창 만들기
+-------------------------
+
+- app/forms.py: User registration form::
+
+    from flask_wtf import FlaskForm
+    from wtforms import StringField, PasswordField, BooleanField, SubmitField
+    from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+    from app.models import User
+
+    # ...
+
+    class RegistrationForm(FlaskForm):
+        username = StringField('Username', validators=[DataRequired()])
+        email = StringField('Email', validators=[DataRequired(), Email()])
+        password = PasswordField('Password', validators=[DataRequired()])
+        password2 = PasswordField(
+            'Repeat Password', validators=[DataRequired(), EqualTo('password')])
+        submit = SubmitField('Register')
+
+        def validate_username(self, username):
+            user = User.query.filter_by(username=username.data).first()
+            if user is not None:
+                raise ValidationError('Please use a different username.')
+
+        def validate_email(self, email):
+            user = User.query.filter_by(email=email.data).first()
+            if user is not None:
+                raise ValidationError('Please use a different email address.')
