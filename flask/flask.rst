@@ -715,3 +715,77 @@ Falsk에서 로그인 하기
             user = User.query.filter_by(email=email.data).first()
             if user is not None:
                 raise ValidationError('Please use a different email address.')
+
+
+Chapter 6: Profile Page and Avatars
+=============================================
+
+- 프로필 페이지 만들기
+
+- app/routes.py: User profile view function::
+
+    @app.route('/user/<username>')
+    @login_required
+    def user(username):
+        user = User.query.filter_by(username=username).first_or_404()
+        posts = [
+            {'author': user, 'body': 'Test post #1'},
+            {'author': user, 'body': 'Test post #2'}
+        ]
+        return render_template('user.html', user=user, posts=posts)
+
+- `@app.route` 데코레이터에 URL이 들어갈 때 <> 안에 들어가게 되면 아래 함수에서 인수로 사용한다.
+
+- `first_or_404()`: 쿼리로 찾은 결과가 있으면 첫번째 값을 반환, 없으면 404에러를 발생시킨다.
+
+- 프로필 사진 추가하기
+
+  - `Gravatar`: 글이나 댓글 등 사용자가 사용하는 서비스에 사진을 넣어줌.(내가 만든 예제에서는 추가하지 않음.)
+
+    - 사이트: http://ko.gravatar.com/
+
+- 포스트용 템플릿 만들기: 프로필 페이지에 포스트 내용을 함께 보여줄 건데,
+  모두 같은 형식을 가지고 있다면 템플릿을 따로 만들고
+  프로필 페이지 템플릿에는 `Jinja2`\ 의 `include`\ 를 사용하는 것이 낫다.
+
+  - app/templates/_post.html: Post sub-template::
+
+      <table>
+          <tr valign="top">
+              <td>{{ post.author.username }} says:<br>{{ post.body }}</td>
+          </tr>
+      </table>
+
+
+  - app/templates/user.html: User avatars in posts::
+
+      {% extends "base.html" %}
+
+      {% block content %}
+          <table>
+              <tr valign="top">
+                  <td><h1>User: {{ user.username }}</h1></td>
+              </tr>
+          </table>
+          <hr>
+          {% for post in posts %}
+              {% include '_post.html' %}
+          {% endfor %}
+      {% endblock %}
+
+- 사용자가 프로필에 추가적인 내용을 쓸 수 있도록 변경
+
+  - app/models.py: New fields in user model::
+
+      class User(UserMixin, db.Model):
+          # ...
+          about_me = db.Column(db.String(140))
+          last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+
+  - 모델을 변경했으니 migration 필요. 코맨드 입력
+
+    - 알렘빅에 새로운 버전 추가::
+
+        flask db migrate -m "new fields in user model"
+
+    - migrate 진행: `flask db upgrade`
