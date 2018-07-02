@@ -7,3 +7,11 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # 에러 발생 시 메일을 받을 이메일 계정 정보 설정
+    MAIL_SEVER = os.environ.get('MAIL_SERVER')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME') # optional
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') # optional
+    ADMINS = ['myemailaddress-askdjfladf@sdffds.com']

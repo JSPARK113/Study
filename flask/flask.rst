@@ -41,7 +41,7 @@ Chapter 2: Templates
 
     <html>
         <head>
-            <title>{{ title }} - Microblog</title>
+            <title>{{ title }} - eblog</title>
         </head>
         <body>
             <h1>Hello, {{ user.username }}!</h1>
@@ -182,14 +182,14 @@ form으로 데이터 받기
       <html>
       <head>
           {% if title %}
-          <title>{{ title }} - microblog</title>
+          <title>{{ title }} - eblog</title>
           {% else %}
-          <title>microblog</title>
+          <title>eblog</title>
           {% endif %}
       </head>
       <body>
           <div>
-              Microblog:
+              eblog:
               <a href="/index">Home</a>
               <a href="/login">Login</a>
           </div>
@@ -611,7 +611,7 @@ Falsk에서 로그인 하기
   - app/templates/base.html: Conditional login and logout links::
 
       <div>
-          Microblog:
+          eblog:
           <a href="{{ url_for('index') }}">Home</a>
           {% if current_user.is_anonymous %}
           <a href="{{ url_for('login') }}">Login</a>
@@ -722,21 +722,21 @@ Chapter 6: Profile Page and Avatars
 
 - 프로필 페이지 만들기
 
-- app/routes.py: User profile view function::
+  - app/routes.py: User profile view function::
 
-    @app.route('/user/<username>')
-    @login_required
-    def user(username):
-        user = User.query.filter_by(username=username).first_or_404()
-        posts = [
-            {'author': user, 'body': 'Test post #1'},
-            {'author': user, 'body': 'Test post #2'}
-        ]
-        return render_template('user.html', user=user, posts=posts)
+      @app.route('/user/<username>')
+      @login_required
+      def user(username):
+          user = User.query.filter_by(username=username).first_or_404()
+          posts = [
+              {'author': user, 'body': 'Test post #1'},
+              {'author': user, 'body': 'Test post #2'}
+          ]
+          return render_template('user.html', user=user, posts=posts)
 
-- `@app.route` 데코레이터에 URL이 들어갈 때 <> 안에 들어가게 되면 아래 함수에서 인수로 사용한다.
+  - `@app.route` 데코레이터에 URL이 들어갈 때 <> 안에 들어가게 되면 아래 함수에서 인수로 사용한다.
 
-- `first_or_404()`: 쿼리로 찾은 결과가 있으면 첫번째 값을 반환, 없으면 404에러를 발생시킨다.
+  - `first_or_404()`: 쿼리로 찾은 결과가 있으면 첫번째 값을 반환, 없으면 404에러를 발생시킨다.
 
 - 프로필 사진 추가하기
 
@@ -789,3 +789,263 @@ Chapter 6: Profile Page and Avatars
         flask db migrate -m "new fields in user model"
 
     - migrate 진행: `flask db upgrade`
+
+- app/templates/user.html: Show user information in user profile template::
+
+    {% extends "base.html" %}
+
+    {% block content %}
+        <table>
+            <tr valign="top">
+                <td><img src="{{ user.avatar(128) }}"></td>
+                <td>
+                    <h1>User: {{ user.username }}</h1>
+                    {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+                    {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
+                </td>
+            </tr>
+        </table>
+        ...
+    {% endblock %}
+
+- 마지막 방문날짜 기록하기
+
+  - `@before_request` 데코레이터: `current_user`\ 가 로그인 상태이면 `last_seen` 필드에 현재 시각을 세팅함.
+
+  - app/routes.py: Record time of last visit::
+
+      from datetime import datetime
+
+      @app.before_request
+      def before_request():
+          if current_user.is_authenticated:
+              current_user.last_seen = datetime.utcnow()
+              db.session.commit()
+
+  - 위 예에서 `db.session.add()`\ 가 생략됐는데, `current_user`\ 에서 Flask-Login이
+    user loader 콜백함수를 실행해 DB세션에 반영하기 때문이다. `add`\ 를 해도 되는데, 생략해도 된다.
+
+- 사용자가 프로필 수정하기
+
+  - app/forms.py: Profile editor form::
+
+      from wtforms import StringField, TextAreaField, SubmitField
+      from wtforms.validators import DataRequired, Length
+
+      # ...
+
+      # 프로필 수정용으로 새로운 form 생성
+      class EditProfileForm(FlaskForm):
+          username = StringField('Username', validators=[DataRequired()])
+          about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
+          submit = SubmitField('Submit')
+
+  - app/templates/edit_profile.html: Profile editor form::
+
+      {% extends "base.html" %}
+
+      {% block content %}
+          <h1>Edit Profile</h1>
+          <form action="" method="post">
+              {{ form.hidden_tag() }}
+              <p>
+                  {{ form.username.label }}<br>
+                  {{ form.username(size=32) }}<br>
+                  {% for error in form.username.errors %}
+                  <span style="color: red;">[{{ error }}]</span>
+                  {% endfor %}
+              </p>
+              <p>
+                  {{ form.about_me.label }}<br>
+                  {{ form.about_me(cols=50, rows=4) }}<br>
+                  {% for error in form.about_me.errors %}
+                  <span style="color: red;">[{{ error }}]</span>
+                  {% endfor %}
+              </p>
+              <p>{{ form.submit() }}</p>
+          </form>
+      {% endblock %}
+
+  - app/routes.py: Edit profile view function::
+
+      from app.forms import EditProfileForm
+
+      @app.route('/edit_profile', methods=['GET', 'POST'])
+      @login_required
+      def edit_profile():
+          form = EditProfileForm()
+          # form에서 입력한 데이터가 validate_on_submit에서 True면 form에 있는 데이터를 current_user의 정보에 입력
+          if form.validate_on_submit():
+              current_user.username = form.username.data
+              current_user.about_me = form.about_me.data
+              db.session.commit()
+              flash('Your changes have been saved.')
+              return redirect(url_for('edit_profile'))
+          # 정보를 보내는 것 없이 get 방식으로 페이지를 불러오면(request.method 함수로 어떤 방식인지 알 수 있음.)
+          # form에 현재 정보만 미리 넣어줌.
+          elif request.method == 'GET':
+              form.username.data = current_user.username
+              form.about_me.data = current_user.about_me
+          return render_template('edit_profile.html', title='Edit Profile',
+                                 form=form)
+
+  - app/templates/user.html: Edit profile link::
+
+        <!-- 프로필 수정 링크 추가. 본인프로필을 볼 때만 수정할 수 있는 버튼이 생성됨. -->
+        {% if user == current_user %}
+        <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
+        {% endif %}
+
+Chapter 7: Error Handling
+==========================================
+
+- 플라스크에서 에러 다루기
+
+  - stack trace를 살펴보면 어떤 에러가 발생했는지 알 수 있다.
+
+  - 왜 에러가 발생했는지 등의 정보는 내부적으로만 보여져야 한다.
+
+- 디버그 모드
+
+  - 개발 단계에서는 바로 에러를 확인하고 싶을 때 디버그 모드를 사용한다. 브라우저 상에서 디버거를 볼 수 있다.
+
+  - 프로덕션 서버에서는 절대 디버그모드가 켜져 있으면 안된다.
+
+  - 터미널에서 `export FLASK_DEBUG=1`\ 을 통해 설정해준다. (윈도우에서는 `export` 대신 `set` 사용)
+
+    - 디버그 모드를 끄고 싶다 `export FLASK_DEBUG=0`
+
+- 사용자에게 보여줄 에러 페이지 만들기
+
+  - `@errorhandler` 사용하기. `errors.py` 파일 추가
+
+  - app/errors.py: Custom error handlers::
+
+      from flask import render_template
+      from app import app, db
+
+      @app.errorhandler(404)
+      def not_found_error(error):
+          return render_template('404.html'), 404
+
+      @app.errorhandler(500)
+      def internal_error(error):
+          db.session.rollback()
+          return render_template('500.html'), 500
+
+  - template에도 `404.html`, `500.html` 추가
+
+    - app/templates/404.html: Not found error template::
+
+        {% extends "base.html" %}
+
+        {% block content %}
+            <h1>File Not Found</h1>
+            <p><a href="{{ url_for('index') }}">Back</a></p>
+        {% endblock %}
+
+    - app/templates/500.html: Internal server error template::
+
+        {% extends "base.html" %}
+
+        {% block content %}
+            <h1>An unexpected error has occurred</h1>
+            <p>The administrator has been notified. Sorry for the inconvenience!</p>
+            <p><a href="{{ url_for('index') }}">Back</a></p>
+        {% endblock %}
+
+  - `__init__.py` 파일에도 errors 사용할 거라고 알려줌.
+
+    - app/__init__.py: Import error handlers::
+
+        # ...
+
+        from app import routes, models, errors
+
+- 에러 발생 시 이메일로 받기
+
+  - 프로덕션 단계에서 에러가 발생하면 알아내기 힘듦.
+
+  - 따라서, 에러 발생 시 stack trace를 포함한 메일을 받도록 구현.
+
+  - `config.py` 파일에 이메일 정보 설정
+
+  - flask는 파이썬의 `logging` 패키지를 사용
+
+    - 패키지는 로그를 이메일로 보내는 기능을 포함하고 있음.
+
+    - SMTPHandler 인스턴스를 flask logger 객체에 추가.
+
+  - 디버그 모드가 아닐 때만 이메일을 받도록 설정 가능.
+
+- 로그 기록을 파일로 만들기
+
+  - `RotatingFileHandler` 클래스 생성
+
+  - app/__init__.py: Email configuration::
+
+      # ...
+      from logging.handlers import RotatingFileHandler
+      import os
+
+      # ...
+
+      if not app.debug:
+          # ...
+
+          if not os.path.exists('logs'):
+              os.mkdir('logs')
+          file_handler = RotatingFileHandler('logs/eblog.log', maxBytes=10240,
+                                             backupCount=10)
+          file_handler.setFormatter(logging.Formatter(
+              '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+          file_handler.setLevel(logging.INFO)
+          app.logger.addHandler(file_handler)
+
+          app.logger.setLevel(logging.INFO)
+          app.logger.info('eblog startup')
+
+  - `eblog.log`\ 라는 이름으로 `logs` 디렉토리에 로그 기록.
+
+  - `RotatingFileHandler` 클래스: 일정한 크기를 유지하면서 로그를 기록한다.
+    일정 크기를 넘어가면 오래된 로그는 지워진다.
+
+  - `logging.Formatter` 클래스는 로그 메시지를 원하는대로 포매팅할 수 있게 해준다.
+
+  - 위의 예에서는 로그 레벨을 `INFO`\ 까지 내렸다.
+
+- 중복 유저 버그 고치기
+
+  - 사용자 등록 시에는 `RegistrationForm`\ 에서 중복되는 username인지 판별함.
+
+  - 프로필 변경 시에도 `EditProfileForm`\ 에 중복 사용자가 생기지 않도록 적용해줘야 함.
+
+  - app/forms.py: Validate username in edit profile form.::
+
+      class EditProfileForm(FlaskForm):
+        username = StringField('Username', validators=[DataRequired()])
+        about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
+        submit = SubmitField('Submit')
+
+        # 이름 변경 시에 이미 있는 이름이면 유효하지 않음.
+        # 단, 본인 이름을 변경하지 않고 그대로 놔둔다면 이미 있는 username이지만, 해당 유저에게 할당된 것이므로 유효하다고 봐야함.
+        def __init__(self, original_username, *args, **kwargs):
+            super(EditProfileForm, self).__init__(*args, **kwargs)
+            self.original_username = original_username
+
+        def validate_username(self, username):
+            if username.data != self.original_username:
+                user = User.query.filter_by(username=self.username.data).first()
+                if user is None:
+                    raise ValidationError('다른 username을 사용하세요.')
+
+  - app/routes.py: Validate username in edit profile form.::
+
+      @app.route('/edit_profile', methods=['GET', 'POST'])
+      @login_required
+      def edit_profile():
+          form = EditProfileForm(current_user.username)
+          # ...
+
+  - `EditProfileForm`\ 에 현재 username을 인수로 넣어줌.
+    -> `form.py`에 `__init__` 함수가 정의돼있음.
