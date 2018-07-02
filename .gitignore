@@ -4,6 +4,7 @@ legacy/
 
 # ignore directory
 ignore_files/
+flask/chart_test/
 
 # ipython jupyter notebook files
 # *.ipynb
