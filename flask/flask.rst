@@ -8,15 +8,21 @@ The Flask Mega Tutorial
 Chapter 1: Hello, World!
 =============================
 
-- `__init__.py` 파일 만들기
+- Flask Application
 
-  - `app/__init__.py`: Flask application instance::
+  - application은 패키지 안에 존재한다. `__init__.py` 파일이 있는 디렉토리를 패키지로 인식하고, import 할 수 있으므로 이 파일을 만든다.
 
-      from flask import Flask
+  - 패키지를 import 할 때, `__init__.py` 파일이 패키지가 어떤 심볼을 노출할지 정의하고 실행한다.
 
-      app = Flask(__name__)
+  - `__init__.py` 파일 만들기.
 
-      from app import routes
+    - `app/__init__.py`: Flask application instance::
+
+        from flask import Flask
+
+        app = Flask(__name__)
+
+        from app import routes
 
 - `routes.py` 파일 만들기
 
@@ -156,9 +162,9 @@ form으로 데이터 받기
             return redirect('/index')
         return render_template('login.html', title='Sign In', form=form)
 
-- `methods` 인수: `get`인지 `post`인지 전달.
+- `methods` 인수: `get`\ 인지 `post`\ 인지 전달.
 
-  - 지정해주지 않으면 디폴트인 `get`만 가능. 데이터를 보내는 `post` 방식은 에러 발생.
+  - 지정해주지 않으면 디폴트인 `get`\ 만 가능. 데이터를 보내는 `post` 방식은 에러 발생.
 
   - `GET`: 클라이언트가 정보를 받기만 함.
 
@@ -296,7 +302,7 @@ Database models
 
 - SQLAlchemy의 ORM 레이어는 데이터베이스 테이블의 각 행과 연결된다.
 
-- `WWW SQL Designer<http://ondras.zarovi.cz/sql/demo/>`_: sql 스키마를 그릴 수 있다.
+- `WWW SQL Designer <http://ondras.zarovi.cz/sql/demo/>`_: sql 스키마를 그릴 수 있다.
 
   - 튜토리얼에서는 `user` 테이블 생성
 
@@ -353,7 +359,7 @@ Mirgration - Alembic 이용
 
     - Alembic에는 DB의 변경사항을 실행해주는 파이썬 파일이 'versions' 디렉토리에 저장된다.
 
-- `flask db upgrade`를 통해 DB에 Alembic 버전을 적용할 수 있다.
+- `flask db upgrade`\ 를 통해 DB에 Alembic 버전을 적용할 수 있다.
 
   - `downgrade`\ 도 가능.
 
@@ -468,7 +474,7 @@ Shell Context
 
 - `@app.shell_context_processor` decorator는 함수를 shell context 함수로 등록한다.
 
-- `eblog.py` 파일에 코드 추가
+- `eblog.py` 파일에 코드 추가::
 
     from app import app, db
     from app.models import User, Post
@@ -1020,6 +1026,8 @@ Chapter 7: Error Handling
 
   - 프로필 변경 시에도 `EditProfileForm`\ 에 중복 사용자가 생기지 않도록 적용해줘야 함.
 
+    - 사용자 등록 시와 다른 점이 있음. (아래 코드 주석으로 확인)
+
   - app/forms.py: Validate username in edit profile form.::
 
       class EditProfileForm(FlaskForm):
@@ -1049,3 +1057,303 @@ Chapter 7: Error Handling
 
   - `EditProfileForm`\ 에 현재 username을 인수로 넣어줌.
     -> `form.py`에 `__init__` 함수가 정의돼있음.
+
+
+Chapter 8: Followers
+======================================
+
+- 데이터베이스 관계
+
+  - One-to-many
+
+  - Many-to-Many
+
+  - Many-to-One / One-to-One
+
+- 팔로워 나타내기
+
+  - 팔로워는 many-to-many 관계가 알맞다.
+
+  - 단, user가 user와 연결되는 many-to-many 관계다. 즉, `self-referential` 관계
+
+- DB 모델
+
+  - app/models.py: Followers association table::
+
+      followers = db.Table('followers',
+          db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+          db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
+      )
+
+  - 모델 클래스와 상관없이 독립적으로 followers 테이블 생성
+
+  - User 클래스에 내가 팔로우한 유저(followed user)에 대한 정보를 생성해줘야 한다.
+
+  - app/models.py: Many-to-many followers relationship(유저테이블에 many-to-many 관계 생성)::
+
+      class User(UserMixin, db.Model):
+          # ...
+          followed = db.relationship(
+              'User', secondary=followers,
+              primaryjoin=(followers.c.follower_id == id),
+              secondaryjoin=(followers.c.followed_id == id),
+              backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+
+  - the left side user(`followed`) is following the right side user.
+
+  - 위에서 사용된 `db.relationship()`\ 의 인수를 알아보자.
+
+    - `'User'`: 우측 entity. 이 예에서는 좌우 entity가 동일하다.
+
+    - `secondary`: 관련 테이블 설정.
+
+    - `primaryjoin`: 좌측 entity와(follower)의 조인컨디션 지정(follower 테이블의 follower_id 컬럼)
+
+    - `secondaryjoin`: 우측 entity와(followed)의 조인컨디션 지정(follower 테이블의 followed_id 컬럼)
+
+    - `backref`: 우측 entity에서 어떻게 관계에 엑세스 할 것인지 정의.
+
+      - `lazy`: 실행 모드를 지정. `dynamic` 모드는 특정 요청이 있기 전까지는 실행하지 않는다.
+
+  - 터미널에서 DB 마이그레이션 실행
+
+    - `flask db migrate -m "followers"`
+
+    - `flask db upgrade`
+
+  - 다른 유저를 팔로우한 유저는 `followed` 관계에 리스트처럼 기록됨.
+
+    - `user1`, `user2`\ 가 있을 때, (파이썬 코드)
+
+      - `user1`\ 이 `user2`\ 를 팔로하게 만들기::
+
+          user1.followed.append(user2)
+
+      - 언팔로우하게 만들기::
+
+          user1.followed.remove(user2)
+
+  - follow, unfollow 함수를 User 모델에서 미리 만들어놓는 게 좋음.
+
+    - app/models.py: Add and remove followers::
+
+        class User(UserMixin, db.Model):
+            #...
+
+            # follow, unfollow 함수를 User 모델에서 미리 만들어놓음.
+            def follow(self, user):
+                if not self.is_following(user):
+                    self.followed.append(user)
+
+            def unfollow(self, user):
+                if self.is_following(user):
+                    self.followed.remove(user)
+
+            # 팔로잉 하고 있는지 DB에서 확인
+            def is_following(self, user):
+                return self.followed.filter(
+                    followers.c.followed_id == user.id).count() > 0
+
+    - `is_following` 함수도 만듦: 이미 팔로했는지 아닌지를 판별
+
+
+- 팔로우한 유저(followed users)의 포스트 타임라인으로 받아보기
+
+  - `user.followed.all()`\ 를 이용하면 모든 followed 유저를 가져올 수 있다.
+
+    - 좋지 않은 방법. 문제1) followed 유저가 수천만이면 수천 데이터베이스 쿼리를 날리고, 그 리스트를 merge 해야함.
+
+    - 문제2) 페이징 시에 보통 가장 최근 포스트를 맨 앞에 가져오게 되는데,
+      followed가 많으면 모든 포스트를 모아서 날짜순으로 정렬하지 않는 한, 어떤 포스트가 최근인지 알 수 없음.
+
+  - 좋은 방법: `app/models.py`: Followed posts query::
+
+      class User(db.Model):
+          #...
+          def followed_posts(self):
+              return Post.query.join(
+                  followers, (followers.c.followed_id == Post.user_id)
+              ).filter(
+                  followers.c.follower_id == self.id
+              ).order_by(
+                  Post.timestamp.desc()
+              )
+
+  - join, filter, order_by 사용
+
+    - 포스트와 followers 정보를 join 함
+
+    - follower_id가 해당 유저인 정보만 가져옴. -> follower_id가 해당 유저인 포스트만 가져오는 셈.
+
+    - order_by: 작성된 시간 순으로 정렬
+
+- 내가 쓴 글도 타임라인에 포함시키기
+
+  - 두가지 방법: 1) followed에 자기자신 포함시키기. - 다른 상태에도 영향을 준다(followed 수가 한명 많아진다.)
+
+  - 2) User의 포스트를 가져오는 쿼리를 만들고, "union" 오퍼레이터 사용해서 하나로 만들어줌.
+
+    - app/models.py: Followed posts query with user's own posts.::
+
+        def followed_posts(self):
+            followed = Post.query.join(
+                followers, (followers.c.followed_id == Post.user_id)).filter(
+                    followers.c.follower_id == self.id)
+            own = Post.query.filter_by(user_id=self.id)
+            return followed.union(own).order_by(Post.timestamp.desc())
+
+- Unit testing: 파이썬에서 제공하는 `unittest` 패키지 사용
+
+  - `파이썬의 유닛테스트 패키지 사용법 <http://pythonstudy.xyz/python/article/21-%EC%9C%A0%EB%8B%9B-%ED%85%8C%EC%8A%A4%ED%8A%B8>`_
+
+  - 아래 테스트 파일(`tests.py`)을 만들어놓고, User 모델이 변경될 때마다 사용하면 됨.
+
+  - tests.py: User model unit tests.::
+
+      from datetime import datetime, timedelta
+      import unittest
+      from app import app, db
+      from app.models import User, Post
+
+      class UserModelCase(unittest.TestCase):
+          """User 모델을 테스트하는 클래스
+          """
+
+          # 테스트 사전처리 - setUp: 테스트 할 db 생성. 임시로 sqlite DBMS 사용
+          def setUp(self):
+              app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+              db.create_all()
+
+          # 테스트 사후처리 - tearDown: 테스트 한 db 삭제
+          def tearDown(self):
+              db.session.remove()
+              db.drop_all()
+
+          # 아래는 4개 함수에 대한 테스트
+         def test_password_hashing(self):
+              u = User(username='susan')
+              u.set_password('cat')
+              self.assertFalse(u.check_password('dog'))
+              self.assertTrue(u.check_password('cat'))
+
+          def test_avatar(self):
+              # 본 예제에서는 아바타 기능을 사용하지 않았으므로 pass
+              pass
+
+          def test_follow(self):
+              # 두명의 유저 생성. u1(john), u2(susan)
+              u1 = User(username='john', email='john@example.com')
+              u2 = User(username='susan', email='susan@example.com')
+              db.session.add(u1)
+              db.session.add(u2)
+              db.session.commit()
+              self.assertEqual(u1.followed.all(), [])
+              self.assertEqual(u1.followers.all(), [])
+
+              # u1이 u2를 follow 하게 만들기
+              u1.follow(u2)
+              db.session.commit()
+              # u1이 u2를 팔로우하고 있는지 관련 내용 확인
+              self.assertTrue(u1.is_following(u2))
+              self.assertEqual(u1.followed.count(), 1)
+              self.assertEqual(u1.followed.first().username, 'susan')
+              self.assertEqual(u2.followers.count(), 1)
+              self.assertEqual(u2.followers.first().username, 'john')
+
+              u1.unfollow(u2)
+              db.session.commit()
+              self.assertFalse(u1.is_following(u2))
+              self.assertEqual(u1.followed.count(), 0)
+              self.assertEqual(u2.followers.count(), 0)
+
+          def test_followed_posts(self):
+              # 유저 4명 생성
+              u1 = User(username='john', email='john@example.com')
+              u2 = User(username='susan', email='susan@example.com')
+              u3 = User(username='mary', email='mary@example.com')
+              u4 = User(username='david', email='david@example.com')
+              db.session.add_all([u1, u2, u3, u4])
+
+              # 포스트 4개 생성
+              now = datetime.utcnow()
+              p1 = Post(body="post from john", author=u1,
+                        timestamp=now + timedelta(seconds=1))
+              p2 = Post(body="post from susan", author=u2,
+                        timestamp=now + timedelta(seconds=4))
+              p3 = Post(body="post from mary", author=u3,
+                        timestamp=now + timedelta(seconds=3))
+              p4 = Post(body="post from david", author=u4,
+                        timestamp=now + timedelta(seconds=2))
+              db.session.add_all([p1, p2, p3, p4])
+              db.session.commit()
+
+              # follower 관계 설정
+              u1.follow(u2) # u1 follow u2
+              u1.follow(u4) # u1 follow u4
+              u2.follow(u3) # u2 follow u3
+              u3.follow(u4) # u3 follow u4
+              db.session.commit()
+
+              # check the followed posts of each user
+              f1 = u1.followed_posts().all()
+              f2 = u2.followed_posts().all()
+              f3 = u3.followed_posts().all()
+              f4 = u4.followed_posts().all()
+              self.assertEqual(f1, [p2, p4, p1])
+              self.assertEqual(f2, [p2, p3])
+              self.assertEqual(f3, [p3, p4])
+              self.assertEqual(f4, [p4])
+
+      # unittest 실행
+      if __name__ == '__main__':
+          unittest.main(verbosity=2)
+
+- 어플리케이션에 follow 기능 반영하기
+
+  - app/routes.py: Follow and unfollow routes.::
+
+      @app.route('/follow/<username>')
+      @login_required
+      def follow(username):
+          user = User.query.filter_by(username=username).first()
+          if user is None:
+              flash('User {} not found.'.format(username))
+              return redirect(url_for('index'))
+          if user == current_user:
+              flash('You cannot follow yourself!')
+              return redirect(url_for('user', username=username))
+          current_user.follow(user)
+          db.session.commit()
+          flash('You are following {}!'.format(username))
+          return redirect(url_for('user', username=username))
+
+      @app.route('/unfollow/<username>')
+      @login_required
+      def unfollow(username):
+          user = User.query.filter_by(username=username).first()
+          if user is None:
+              flash('User {} not found.'.format(username))
+              return redirect(url_for('index'))
+          if user == current_user:
+              flash('You cannot unfollow yourself!')
+              return redirect(url_for('user', username=username))
+          current_user.unfollow(user)
+          db.session.commit()
+          flash('You are not following {}.'.format(username))
+          return redirect(url_for('user', username=username))
+
+  - app/templates/user.html: Follow and unfollow links in user profile page.::
+
+        ...
+        <h1>User: {{ user.username }}</h1>
+        {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+        {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
+        <p>{{ user.followers.count() }} followers, {{ user.followed.count() }} following.</p>
+        {% if user == current_user %}
+        <p><a href="{{ url_for('edit_profile') }}">Edit your profile</a></p>
+        {% elif not current_user.is_following(user) %}
+        <p><a href="{{ url_for('follow', username=user.username) }}">Follow</a></p>
+        {% else %}
+        <p><a href="{{ url_for('unfollow', username=user.username) }}">Unfollow</a></p>
+        {% endif %}
+        ...
