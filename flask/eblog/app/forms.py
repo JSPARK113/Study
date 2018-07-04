@@ -45,3 +45,9 @@ class EditProfileForm(FlaskForm):
             user = User.query.filter_by(username=self.username.data).first()
             if user is None:
                 raise ValidationError('다른 username을 사용하세요.')
+
+class PostForm(FlaskForm):
+    post = TextAreaField('내용을 입력하세요', validators=[
+        DataRequired(), Length(min=1, max=140)
+    ])
+    submit = SubmitField('입력')

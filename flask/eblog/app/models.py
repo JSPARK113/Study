@@ -55,8 +55,6 @@ class User(UserMixin, db.Model):
             followers, (followers.c.followed_id == Post.user_id)
         ).filter(
             followers.c.follower_id == self.id
-        ).order_by(
-            Post.timestamp.desc()
         )
         # User 본인이 쓴 글도 포함시키기
         own = Post.query.filter_by(user_id=self.id)

@@ -18,7 +18,7 @@ class UserModelCase(unittest.TestCase):
         db.drop_all()
 
     # 아래는 4개 함수에 대한 테스트
-   def test_password_hashing(self):
+    def test_password_hashing(self):
         u = User(username='susan')
         u.set_password('cat')
         self.assertFalse(u.check_password('dog'))
