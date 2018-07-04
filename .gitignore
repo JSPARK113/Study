@@ -114,5 +114,8 @@ ENV/
 # mypy
 .mypy_cache/
 
-#unittest files
+# unittest files
 .pytest_cache/
+
+# flask log files
+flask/eblog/logs
