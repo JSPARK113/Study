@@ -113,3 +113,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+#unittest files
+.pytest_cache/
