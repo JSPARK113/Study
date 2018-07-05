@@ -22,4 +22,14 @@
     {% for post in posts %}
         {% include '_post.html' %}
     {% endfor %}
+    {% if prev_url %}
+        <a href="{{ prev_url }}">
+            <input type="button" value="이전 페이지">
+        </a>
+    {% endif %}
+    {% if next_url %}
+        <a href="{{ next_url }}">
+            <input type="button" value="다음 페이지">
+        </a>
+    {% endif %}
 {% endblock %}

@@ -1476,5 +1476,166 @@ Follow할 User 쉽게 찾기
     {% endfor %}
     ...
 
-블로그 페이징 하기
-------------------------
+Pagination - 페이지 이동 링크(버튼) 만들기
+---------------------------------------------------
+
+- Flask-SQLAlchemy는 `paginate()` 메서드 제공.
+
+  - 3개의 인수: 1) page number
+
+  - 2) 페이지당 아이템 수
+
+  - 3) error flag: `True`\ 면 out of range page일 때 404 에러를 반환.
+       `False`\ 면 빈 리스트 반환
+
+- config 파일에서 포스트당 페이지를 정할 수 있음.
+
+  - config.py: Posts per page configuration.::
+
+      class Config(object):
+          # ...
+          POSTS_PER_PAGE = 3
+
+- URL에서 query string argument를 받을 수 있음
+
+  - URL에서 `?` 뒤에 있는 것이 query string argument
+
+  - query string argument는 `request.args` 객체로 받을 수 있음.
+
+  - 이 예에서는 인수명을 **page**\ 로 받음.
+
+- `paginate`\ 는 페이지 네비게이션에 사용되는 attribute 몇을 가지고 있다.
+
+  - `has_next`: `True` = 현재 페이지에서 다음 페이지가 있을 때
+
+  - `has_prev`: `True` = 현재 페이지에서 이전 페이지가 있을 때
+
+  - `next_num`: 다음 페이지 number
+
+  - `prev_num`: 이전 페이지 number
+
+- view file에 적용
+
+  - app/routes.py: Next and previous page links.::
+
+      @app.route('/', methods=['GET', 'POST'])
+      @app.route('/index', methods=['GET', 'POST'])
+      @login_required
+      def index():
+          # ...
+          page = request.args.get('page', 1, type=int)
+          posts = current_user.followed_posts().paginate(
+              page, app.config['POSTS_PER_PAGE'], False)
+              # 페이지당 포스트 수를 app.config의 POST_PER_PAGE에서 가져옴.
+          # 현재 posts가 다음 페이지가 있으면= has_next가 True면 url_for에 index와 page number를 인수로 넘겨줌
+          next_url = url_for('index', page=posts.next_num) \
+              if posts.has_next else None
+          # next_url과 같은 로직
+          prev_url = url_for('index', page=posts.prev_num) \
+              if posts.has_prev else None
+          return render_template('index.html', title='Home', form=form,
+                                 posts=posts.items, next_url=next_url,
+                                 prev_url=prev_url)
+
+       @app.route('/explore')
+       @login_required
+       def explore():
+          page = request.args.get('page', 1, type=int)
+          posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+              page, app.config['POSTS_PER_PAGE'], False)
+          next_url = url_for('explore', page=posts.next_num) \
+              if posts.has_next else None
+          prev_url = url_for('explore', page=posts.prev_num) \
+              if posts.has_prev else None
+          return render_template("index.html", title='Explore', posts=posts.items,
+                                next_url=next_url, prev_url=prev_url)
+
+- template에 적용
+
+  - app/templates/index.html: Render pagination links on the template.::
+
+      ...
+      {% for post in posts %}
+          {% include '_post.html' %}
+      {% endfor %}
+      {% if prev_url %}
+      <a href="{{ prev_url }}">Newer posts</a>
+      {% endif %}
+      {% if next_url %}
+      <a href="{{ next_url }}">Older posts</a>
+      {% endif %}
+      ...
+
+- 프로필 페이지에 pagination 적용
+
+  - app/routes.py: Pagination in the user profile view function.::
+
+      @app.route('/user/<username>')
+      @login_required
+      def user(username):
+          user = User.query.filter_by(username=username).first_or_404()
+          page = request.args.get('page', 1, type=int)
+          posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+              page, app.config['POSTS_PER_PAGE'], False)
+          next_url = url_for('user', username=user.username, page=posts.next_num) \
+              if posts.has_next else None
+          prev_url = url_for('user', username=user.username, page=posts.prev_num) \
+              if posts.has_prev else None
+          return render_template('user.html', user=user, posts=posts.items,
+                                 next_url=next_url, prev_url=prev_url)
+
+  - app/templates/user.html: Pagination links in the user profile template.::
+
+      ...
+      {% for post in posts %}
+          {% include '_post.html' %}
+      {% endfor %}
+      {% if prev_url %}
+      <a href="{{ prev_url }}">Newer posts</a>
+      {% endif %}
+      {% if next_url %}
+      <a href="{{ next_url }}">Older posts</a>
+      {% endif %}
+
+
+Chapter 10: Email Support
+===================================
+
+- 패스워드를 잊어버렸을 때, 리셋을 위해서 이메일을 사용한다.
+
+- `Flask-Mail <https://pythonhosted.org/Flask-Mail/>`_: 메일을 보내기 위한 extension
+
+- `JSON Web Tokens <https://jwt.io/>`_: 보안 토큰 생성. 패스워드 리셋 링크에 사용.
+
+- `__init__.py`\ 에 메일 인스턴스 생성
+
+  - app/__init__.py: Flask-Mail instance.::
+
+      # ...
+      from flask_mail import Mail
+
+      app = Flask(__name__)
+      # ...
+      mail = Mail(app)
+
+- 메일을 보내는 방법 두가지
+
+  1) 가상 email 서버 생성
+
+    - 터미널에서 실행, 아래 2줄은 환경변수 설정::
+
+      (venv) $ python -m smtpd -n -c DebuggingServer localhost:8025
+      (venv) $ export MAIL_SERVER=localhost
+      (venv) $ export MAIL_PORT=8025
+
+  2) 실제 email 서버 사용
+
+    - 터미널에서 아래처럼 환경변수 설정::
+
+        (venv) $ export MAIL_SERVER=smtp.googlemail.com
+        (venv) $ export MAIL_PORT=587
+        (venv) $ export MAIL_USE_TLS=1
+        (venv) $ export MAIL_USERNAME=<your-gmail-username>
+        (venv) $ export MAIL_PASSWORD=<your-gmail-password>
+
+    - Gmail은 "less secure apps" 설정 필요할 수도 있음.

@@ -14,4 +14,7 @@ class Config(object):
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME') # optional
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') # optional
-    ADMINS = ['myemailaddress-askdjfladf@sdffds.com']
+    ADMINS = ['example@sdfasdfsdff.com']
+
+    # 페이지 당 포스트 개수
+    POSTS_PER_PAGE = 20

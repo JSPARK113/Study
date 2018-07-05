@@ -4,7 +4,8 @@
             <a href="{{ url_for('user', username=post.author.username) }}">
                 {{ post.author.username }}
             </a>
-            says:<br>{{ post.body }}
+            says:<br>
+            {{ post.body }}
         </td>
     </tr>
 </table>

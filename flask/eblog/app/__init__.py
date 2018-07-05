@@ -3,6 +3,7 @@ from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_mail import Mail
 from logging.handlers import RotatingFileHandler
 import os
 import logging
@@ -12,6 +13,7 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login = LoginManager(app)
+mail = Mail(app)
 
 # 로그를 파일로 만들기
 if not app.debug: # 디버그 모드가 아닐때만 실행

@@ -2,6 +2,7 @@ from flask import render_template, flash, redirect, request, url_for
 from app import app, db
 from app.forms import *
 from app.models import *
+from app.email import send_password_reset_email
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 from datetime import datetime
@@ -17,19 +18,19 @@ def index():
         db.session.commit()
         flash('Your post is now live!')
         return redirect(url_for('index'))
-    posts = current_user.followed_posts().all()
     # 테스트용 포스트 직접입력
-    # posts = [
-    #     {
-    #         'author': {'username': 'John'},
-    #         'body': 'Beautiful day in Portland!------'
-    #     },
-    #     {
-    #         'author': {'username': 'Susan'},
-    #         'body': 'The Avengers movie was so cool!'
-    #     }
-    # ]
-    return render_template("index.html", title='Home Page', form=form, posts=posts)
+    # posts = [{'author': {'username': 'John'}, 'body': 'Beautiful day in Portland!},
+    #     {'author': {'username': 'Susan'}, 'body': 'The Avengers movie was so cool!'}]
+    page = request.args.get('page', 1, type=int)
+    posts = current_user.followed_posts().paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+        # 페이지당 포스트 수를 app.config의 POSTS_PER_PAGE에서 가져옴.
+    # 현재 posts가 다음 페이지가 있으면= has_next가 True면 url_for에 index와 page number를 인수로 넘겨줌
+    next_url = url_for('index', page=posts.next_num) if posts.has_next else None
+    # next_url과 같은 로직
+    prev_url = url_for('index', page=posts.prev_num) if posts.has_prev else None
+    return render_template("index.html", title='Home Page', form=form, posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -68,15 +69,23 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 @app.route('/user/<username>')
+@login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    posts = current_user.followed_posts().all()
     # 테스트용 포스트 직접입력
     # posts = [
     #     {'author': user, 'body': 'test post 1'},
     #     {'author': user, 'body': 'test post 2'}
     # ]
-    return render_template('user.html', user=user, posts=posts)
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('user', username=user.username, page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('user', username=user.username, page=posts.prev_num) \
+        if posts.has_prev else None
+    return render_template('user.html', user=user, posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
 
 @app.before_request
 def before_request():
@@ -129,8 +138,29 @@ def unfollow(username):
     flash('You are not following {}'.format(username))
     return redirect(url_for('user', username=username))
 
+# 모든 사용자의 포스트 보기
 @app.route('/explore')
 @login_required
 def explore():
-    posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template('index.html', title='Explore', posts=posts)
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('explore', page=posts.next_num) if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) if posts.has_prev else None
+    return render_template('index.html', title='Explore', posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    # 이미 로그인한 사용자는 index로 돌려보냄
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_password_reset_email(user)
+        flash('패스워드 재설정을 위한 이메일이 발송되었습니다. 이메일을 확인해주시길 바랍니다.')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html',
+                           title='Reset Password', form=form)
