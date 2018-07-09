@@ -6,6 +6,7 @@ legacy/
 ignore_files/
 flask_study/chart_test/
 flask_study/seatpark/
+flask_study/test/
 
 # ipython jupyter notebook files
 # *.ipynb
