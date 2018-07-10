@@ -18,11 +18,13 @@ Chapter 1: Hello, World!
 
     - `app/__init__.py`: Flask application instance::
 
-        from flask import Flask
+        from flask import Flask # Falsk 클래스 임포트
 
-        app = Flask(__name__)
+        app = Flask(__name__) # WSGI 애플리케이dj
 
         from app import routes
+
+    - `어플리케이션 객체에 대한 설명 <https://flask-docs-kr.readthedocs.io/ko/latest/ko/api.html#flask.Flask>`_
 
 - `routes.py` 파일 만들기
 
@@ -1639,3 +1641,438 @@ Chapter 10: Email Support
         (venv) $ export MAIL_PASSWORD=<your-gmail-password>
 
     - Gmail은 "less secure apps" 설정 필요할 수도 있음.
+
+
+Chapter 11: Facelift
+===================================
+
+- 부트스트랩 사용하기
+
+
+Chapter 12: Dates and Times
+==================================
+
+- 나라마다 시간대를 맞추는 문제
+
+- 위치에 따라 `datetime.now()`\ 가 출력하는 결과가 다르다.
+
+- UTC 기준으로 항상 같은 값을 출력하는 `datetime.utcnow()`\ 를 사용하는 것이 좋다.
+
+- Timezone 문제를 다루는 방식
+
+  - 예전 방식: 서버가 클라이언트의 정보를 받아서 계산해서 클라이언트에게 넘겨줌.
+
+  - 현재 방식: 서버는 항상 같은 값을 주고, 클라이언트에서 자바스크립트를 이용해서 로컬 시간으로 변경
+
+Moment.js와 Flask-Moment 사용하기
+----------------------------------------------
+
+- Moment.js는 날짜와 시간을 렌더링하는 자바스크립트 라이브러리
+
+- flask-moment를 사용하면 자바스크립트를 직접사용하지 않아도 템플릿 상에서 날짜에 대한 조절을 할 수 있다.
+
+- 설치: `$ pip install flask-moment`
+
+- app/__init__.py: Flask-Moment instance.::
+
+# ...
+from flask_moment import Moment
+
+app = Flask(__name__)
+# ...
+moment = Moment(app)
+
+- 템플릿에 moment.js 추가 app/templates/base.html: Including moment.js in the base template.::
+
+    ...
+
+    {% block scripts %}
+        {{ super() }}
+        {{ moment.include_moment() }}
+    {% endblock %}
+
+  - `moment.include_moment()`\ 는 `<script>` 태그를 만든다.
+
+- `moment(시간).함수(형식)`: 시간이 지정한 형식대로 나온다.
+
+  - 시간은 ISO 8601 표준 포맷으로 입력. `{{ year }}-{{ month }}-{{ day }}T{{ hour }}:{{ minute }}:{{ second }}{{ timezone }}`
+
+  - 예::
+
+      moment('2017-09-28T21:45:23Z').format('L')
+      "09/28/2017"
+      moment('2017-09-28T21:45:23Z').format('LL')
+      "September 28, 2017"
+      moment('2017-09-28T21:45:23Z').format('LLL')
+      "September 28, 2017 2:45 PM"
+      moment('2017-09-28T21:45:23Z').format('LLLL')
+      "Thursday, September 28, 2017 2:45 PM"
+      moment('2017-09-28T21:45:23Z').format('dddd')
+      "Thursday"
+      moment('2017-09-28T21:45:23Z').fromNow()
+      "7 hours ago"
+      moment('2017-09-28T21:45:23Z').calendar()
+      "Today at 2:45 PM"
+
+- app/templates/user.html: Render timestamp with moment.js.::
+
+    {% if user.last_seen %}
+    <p>Last seen on: {{ moment(user.last_seen).format('LLL') }}</p>
+    {% endif %}
+
+- `moment()`\ 는 `datetime` 객체.
+
+- `fromNow()`\ 로 timestamp 렌더링 가능.
+
+  - app/templates/_post.html: Render timestamp in post sub-template.::
+
+      <a href="{{ url_for('user', username=post.author.username) }}">
+          {{ post.author.username }}
+      </a>
+      said {{ moment(post.timestamp).fromNow() }}:
+      <br>
+      {{ post.body }
+
+
+Chapter 13: I18n and L10n
+==================================
+
+
+- 번역에는 `Flask-Babel` 사용
+
+- Babel 클래스 인스턴스 생성 app/__init__.py: Flask-Babel instance.::
+
+    # ...
+    from flask_babel import Babel
+
+    app = Flask(__name__)
+    # ...
+    babel = Babel(app)
+
+- 지원하는 언어 리스트 설정 config.py: Supported languages list.::
+
+    class Config(object):
+        # ...
+        LANGUAGES = ['en', 'es']
+
+- `Babel`\ 이 지원하는 `localeselector` 데코레이터 사용
+
+  - app/__init__.py: Select best language.::
+
+      from flask import request
+
+      # ...
+
+      @babel.localeselector
+      def get_locale():
+          return request.accept_languages.best_match(app.config['LANGUAGES'])
+          # 특정언어로 고정시키고 싶으면 return 'ko' 이런식으로 설정
+
+  - `request` 객체의 accept_languages 속성: 클라이언트가 request에 보내는 헤더 정보중 언어 정보.
+
+
+- `messages.po`, `messages.mo`, `messages.pot` 파일.
+
+  - 터미널에서 다음과 같이 실행::
+
+    $ pybabel extract -F babel.cfg -k _l -o messages.pot .
+    $ pybabel update -i messages.pot -d app/translations
+
+- 날짜와 시간 번역하기
+
+  - `get_locale()` 함수: 선택된 언어와 지역을 get_locale 함수를 통해 반환한다.
+
+  - `g` 객체에 이 정보 보내기
+
+  - app/routes.py: Store selected language in flask.g. ::
+
+      # ...
+      from flask import g
+      from flask_babel import get_locale
+
+      # ...
+
+      @app.before_request
+      def before_request():
+          # ...
+          g.locale = str(get_locale())
+
+  - moment.js에서 위 속성에 접근하기
+
+  - app/templates/base.html: Set locale for moment.js.::
+
+      ...
+      {% block scripts %}
+          {{ super() }}
+          {{ moment.include_moment() }}
+          {{ moment.lang(g.locale) }}
+      {% endblock %}
+
+- 코맨드 라인에서 번역 기능 사용하기
+
+
+Chapter 14: Ajax
+============================
+
+- 어플리케이션 모델에 대해
+
+  - 전통적인 server-side 모델에서는 HTTP request를 받으면, 클라이언트가 웹 어플리케이션을 사용하는 동안
+    서버가 계속 작동하면서 그 요청에 대한 답을 한다.
+
+  - 클라이언트 측에서 작업을 하는 client-side 모델도 있다. request를 통해 html과 함께 코드(보통은 자바스크립트)를 받는다.
+    html 부분은 먼저 디스플레이하고, 코드를 실행한다.
+
+    - 엄격한 client-side 어플리케이션은 최초에 한번만 서버에서 request를 통해 데이터를 가져온다.
+      이런 타입을 'Single Page Applications'(혹은 SPAs)라고 한다.
+
+  - 대부분의 어플리케이션은 위 두 모델의 하이브리드 형태다.
+
+- Ajax(Asynchronous JavaScript and XML)
+
+  - 포스트 실시간 번역을 예로 들면, 클라이언트의 브라우저는 포스트에 대한 데이터를
+    asynchronous requests를 통해 서버로 전송하고,
+    서버는 그 데이터에 대해 별도의 페이지 새로고침 없이 번역작업을 해서 repond 한다.
+    클라이언트는 번역된 결과를 현재 페이지에 동적으로(dynamically) 입력한다.
+
+실시간 번역 적용하기
+--------------------------
+
+  - Ajax 서비스를 이용하기 적절한 예. 한 포스트를 번역하기 위해 모든 다른 블로그 포스트를 새로고침하는 것보다
+    해당 부분의 번역만 원본 텍스트 밑에 덧붙여지도록 하는 것이 훨씬 낫다.
+
+  - 적용 단계
+
+    - 번역할 원본 텍스트가 어떤 언어인지, 어떤 언어로 번역돼야 할지 파악
+
+    - Ajax 요청을 서버로 보내고 서버에서 번역 API에 연결
+
+    - 서버에서 번역된 텍스트와 함께 reponse를 보내면 클라이언트 측 자바스크립트 코드가 페이지에 동적으로 텍스트 넣기
+
+- 원본 텍스트 언어 알아내기
+
+  - 파이썬의 언어를 알아내는 `guess_language` 라이브러리 사용.
+
+    - 원래 파이썬2에만 사용 가능하지만, 3에서도 사용가능하게 설치::
+
+      (venv) $ pip install guess-language_spirit
+
+  - `Post` 모델에 `language` 필드 추가
+
+    - app/models.py: Add detected language to Post model.::
+
+        class Post(db.Model):
+            # ...
+            language = db.Column(db.String(5))
+
+    - 모델을 변경했으니, alembic을 통해 migration 다시 실행, migrate&upgrade
+
+  - app/routes.py: Save language for new posts.::
+
+      from guess_language import guess_language
+
+      @app.route('/', methods=['GET', 'POST'])
+      @app.route('/index', methods=['GET', 'POST'])
+      @login_required
+      def index():
+          form = PostForm()
+          if form.validate_on_submit():
+              # post 입력시에 해당 post가 어떤 언어인지를 db에 같이 입력.
+              language = guess_language(form.post.data)
+              if language == 'UNKNOWN' or len(language) > 5:
+                  language = ''
+              post = Post(body=form.post.data, author=current_user,
+                          language=language)
+              # ...
+
+- "번역" 링크 추가하기
+
+  - app/templates/_post.html: Add a translate link to posts.::
+
+      {% if post.language and post.language != g.locale %}
+      <br><br>
+      <a href="#">{{ _('Translate') }}</a>
+      {% endif %}
+
+- 서드파티 번역 서비스
+
+  - Google Cloud Translation API, Microsoft Translator Text API
+
+    - 둘다 유료지만, MS는 짧은 문장은 무료로 사용 가능. -> 예에서는 MS API 사용
+
+  - view file 만들기
+
+    - app/translate.py: Text translation function.::
+
+        import json
+        import requests
+        from flask_babel import _
+        from app import app
+
+        def translate(text, source_language, dest_language):
+            if 'MS_TRANSLATOR_KEY' not in app.config or \
+                    not app.config['MS_TRANSLATOR_KEY']:
+                return _('Error: the translation service is not configured.')
+            auth = {'Ocp-Apim-Subscription-Key': app.config['MS_TRANSLATOR_KEY']}
+            r = requests.get('https://api.microsofttranslator.com/v2/Ajax.svc'
+                             '/Translate?text={}&from={}&to={}'.format(
+                                 text, source_language, dest_language),
+                             headers=auth)
+            if r.status_code != 200:
+                return _('Error: the translation service failed.')
+            return json.loads(r.content.decode('utf-8-sig'))
+
+  - MS 번역 API는 HTTP requests를 받음. `requests` 패키지 사용.
+
+    - 번역 API로 request 보내기
+
+      - requests 패키지의 get() 메서드 사용: 첫번째 인수로 URL을 받아 GET 메서드 방식으로 HTTP 리퀘스트를 보냄.
+
+        - 예에서 사용한 /v2/Ajax.svc/Translate URL은 번역 서비스의 endpoint로, 번역 데이터를 JSON형식으로 반환.
+          query string arguments를 URL 안에 같이 받음.
+
+            - query string arguments
+
+              - `text`: 원본 텍스트
+
+              - `from`: 원본 텍스트의 언어
+
+              - `to`: 번역 완료 언어
+
+      - `requests.get()`\ 은 서비스가 제공하는 모든 디테일을 담은 response 객체를 반환.
+
+        - `status_code`\ 는 리퀘스트에 대한 상태. 200이면 정상적으로 리퀘스트에 대한 response가 온 것.
+          200이 아니면 error를 반환하고, 200이면 response에 대한 json값을 반환.
+
+
+- 서버에서의 Ajax
+
+  - 사용자가 번역 링크를 누르면 포스트 아래에 번역 내용이 나타난다.
+
+  - 비동기(of Ajax) 리퀘스트는 xml이나 json 같은 데이터만 반환한다.
+    아래 번역 view 함수는 MS 번역 API를 불러오고, 번역된 텍스트를 json 포맷으로 반환한다.
+
+  - app/routes.py: Text translation view function.::
+
+      from flask import jsonify
+      from app.translate import translate
+
+      @app.route('/translate', methods=['POST'])
+      @login_required
+      def translate_text():
+          return jsonify({'text': translate(request.form['text'],
+                                            request.form['source_language'],
+                                            request.form['dest_language'])})
+
+  - `request.form` 속성은 제출할 때 보내지는 데이터의 정보가 담긴 딕셔너리다.
+    이전에는 Flask-WTF를 사용하기 때문에 `request.form` \ 을 쓸 일이 없었지만,
+    이 경우에는 web form이 없으므로 데이터에 직접 접근해야 한다.
+
+  - 위에서 `jsonify()` 안에 `translate`\ 를 사용한다.
+
+  - `jsonify()`\ 는 Flask의 함수로, 딕셔너리를 JSON의 형태로 바꿔준다.
+    `jsonify()`의 반환값은 클라이언트에게 되돌려질 HTTP response다.
+
+- 클라이언트에서의 Ajax
+
+  - 번역 링크를 누르면 번역이 되도록 구현 필요. 자바스크립트가 브라우저에서 실행될 때, 페이지는 DOM을
+    통해 내부적으로 보여진다. 이는 페이지에 있는 모든 요소를 참조하는 계층적인 구조다.
+    컨텍스트 안에서 실행되는 자바스크립트 코드는 페이지의 변경을 위해 DOM을 변경할 수 있다.
+
+  - 자바스크립트가 번역에 필요한 3개 인수를 얻기 위해 DOM에 노드를 위치시킨다.
+
+    - 블로그 포스트를 포함하는 DOM 노드를 식별하는 것을 쉽게하기 위해 고유 ID를 붙여준다.
+      `_post.html`\ 을 보면 {{ post.body }}가 있는데, 이걸 <span> 태그로 감싸고 id를 붙여준다.
+
+  - app/templates/_post.html: Add an ID to each blog post.::
+
+      <span id="post{{ post.id }}">{{ post.body }}</span>
+
+    - 각 포스트마다 post1, post2와 같이 id를 붙여줬다. 모든 포스트마다 각각의 `post<id>` 노드를 갖게 됐다.
+
+  - app/templates/_post.html: Add an ID to the translate link.::
+
+      <span id="translation{{ post.id }}">
+          <a href="#">{{ _('Translate') }}</a>
+      </span>
+
+    - 각 번역 링크에도 translation<id>로 식별 id를 넣어줌.
+
+  - 다음 단계는 모든 번역 작업을 할 함수를 작성.
+
+    - app/templates/base.html: Client-side translate function.::
+
+        {% block scripts %}
+            ...
+            <script>
+                function translate(sourceElem, destElem, sourceLang, destLang) {
+                    $(destElem).html('<img src="{{ url_for('static', filename='loading.gif') }}">');
+                    $.post('/translate', {
+                        text: $(sourceElem).text(),
+                        source_language: sourceLang,
+                        dest_language: destLang
+                    }).done(function(response) {
+                        $(destElem).text(response['text'])
+                    }).fail(function() {
+                        $(destElem).text("{{ _('Error: Could not contact server.') }}");
+                    });
+                }
+            </script>
+        {% endblock %}
+
+      - 앞의 두 개 인수는 포스트와 번역 링크에 대한 고유 ID고, 마지막 2개 인수는 원본과 목적 언어 코드다.
+
+    - `$.post()`: jquery 함수. web form이 하는 방식과 비슷하게 데이터를 서버에 보냄.
+      이렇게 보내면 `request.form` 딕셔너리로 사용할 수 있음.
+
+      - `$.post()` 2개 인수
+
+        1. 리퀘스트 보낼 URL
+
+        2. 서버에 필요한 3개 데이터를 포함한 딕셔너리(자바스크립트식으로 표현하자면 객체)
+
+    - 자바스크립트는 수많은 콜백함수(혹은 promises)와 함께 작동한다. 자바스크립트는 대기없이 모든 것을 비동기로 처리한다.
+      따라서 response가 정상적으로 받아들여졌을 때, 브라우저가 불러올 콜백함수를 제공하는 것이 필요하다.
+      에러가 발생했을 때와 그렇지 않을 때의 콜백함수를 모두 지정해주면, 좀 더 로버스트하고 모든 상황에 적용 가능하다.
+
+      $.post(<url>, <data>).done(function(response) {
+          // success callback
+      }).fail(function() {
+          // error callback
+      })
+
+    - `$.post()`\ 가 성공하면 done을, 실패하면 fail의 함수를 실행.
+
+    - app/templates/_post.html: Translate link handler.::
+
+          <span id="translation{{ post.id }}">
+              <a href="javascript:translate(
+                          '#post{{ post.id }}',
+                          '#translation{{ post.id }}',
+                          '{{ post.language }}',
+                          '{{ g.locale }}');">{{ _('Translate') }}</a>
+          </span>
+
+    - `#`\ 를 이용해서 id를 인수로 넘겨줌.
+
+
+
+
+참고
+================
+
+- `WSGI <https://ko.wikipedia.org/wiki/%EC%9B%B9_%EC%84%9C%EB%B2%84_%EA%B2%8C%EC%9D%B4%ED%8A%B8%EC%9B%A8%EC%9D%B4_%EC%9D%B8%ED%84%B0%ED%8E%98%EC%9D%B4%EC%8A%A4>`_
+
+  - 웹 서버 게이트웨이 인터페이스(Web Server Gateway Interface)
+
+  - 웹서버와 웹애플리케이션의 인터페이스를 위한 파이썬 프레임 워크
+
+- 비동기(Asynchronous)
+
+  - 보통 한 작업을 멈추지 않고, 다른 작업을 같이, 즉시, 바로 다음 진행할 수 있게 하는 경우에 비동기라는 말을 붙인다.
+
+  - 비동기 입출력, 비동기 프로그래밍 등
+
+- 서드파티
+
+  - 하드웨어 생산자(퍼스트 파티), 생산자에게 승인을 받은 소프트웨어 생산자(세컨드 파티) 외의
+    제3자가 만든 소프트웨어. 각 분야마다 뜻은 조금씩 다르지만, 전체적으로는 비슷한 느낌으로 사용.
