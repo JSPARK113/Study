@@ -20,11 +20,13 @@ Chapter 1: Hello, World!
 
         from flask import Flask # Falsk 클래스 임포트
 
-        app = Flask(__name__) # WSGI 애플리케이dj
+        app = Flask(__name__) # WSGI 애플리케이션
 
         from app import routes
 
     - `어플리케이션 객체에 대한 설명 <https://flask-docs-kr.readthedocs.io/ko/latest/ko/api.html#flask.Flask>`_
+
+    - __name__은 직접 실행될 때와 import 돼서 실행될 때의 값이 달라진다.
 
 - `routes.py` 파일 만들기
 
@@ -2053,6 +2055,44 @@ Chapter 14: Ajax
           </span>
 
     - `#`\ 를 이용해서 id를 인수로 넘겨줌.
+
+
+Chapter 15: A Better Application Structure
+=======================================================
+
+어플리케이션에 전역변수를 사용하는 것은 좋지 않다. 대신 application factory 함수를 사용한다.
+
+Blueprints
+------------------
+
+플라스크의 blueprint는 어플리케이션의 subset을 보여주는 논리적인 구조다.
+blueprint는 routes, view 함수, form, 템플릿, static 파일과 같은 요소를 포함한다.
+blueprint를 쓰면 분리된 파이썬 패키지에 어플의 특정 항목과 관련된 요소로 싸여있는 컴포넌트를 갖게 된다.
+
+blueprint는 어플에 등록해야한다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
