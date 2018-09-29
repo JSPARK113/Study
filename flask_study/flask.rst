@@ -2069,7 +2069,7 @@ Blueprints
 blueprint는 routes, view 함수, form, 템플릿, static 파일과 같은 요소를 포함한다.
 blueprint를 쓰면 분리된 파이썬 패키지에 어플의 특정 항목과 관련된 요소로 싸여있는 컴포넌트를 갖게 된다.
 
-blueprint는 어플에 등록해야한다.
+blueprint를 사용하려면 어플리케이션에 등록해야한다.
 
 
 
