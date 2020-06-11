@@ -274,28 +274,28 @@
 ### 클래스에 State 추가하기
 1. 클래스 생성자(constructor)를 추가한다.
 2. state를 정의하고, props를 받아온다.
-```
-class Clock extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {date: new Date()};
+  ```
+  class Clock extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {date: new Date()};
+    }
+
+    render() {
+      return (
+        <div>
+          <h1>Hello, world!</h1>
+          <h2>It is {this.state.date.toLocaleTimeString()}.</h2>
+        </div>
+      );
+    }
   }
 
-  render() {
-    return (
-      <div>
-        <h1>Hello, world!</h1>
-        <h2>It is {this.state.date.toLocaleTimeString()}.</h2>
-      </div>
-    );
-  }
-}
-
-ReactDOM.render(
-  <Clock />,
-  document.getElementById('root')
-);
-```
+  ReactDOM.render(
+    <Clock />,
+    document.getElementById('root')
+  );
+  ```
 
 ### 클래스에 Lifecycle 메서드 추가
 - `componentDidMount()`는 컴포넌트가 DOM으로 렌더된 후에 실행된다.
@@ -370,7 +370,7 @@ ReactDOM.render(
     this.setState((state, props) => ({
       counter: state.counter + props.increment
     }));
-  '''
+    ```
 
   3. State Updates are Merged
     - state의 일부만 변경하면 변경된 사항이 기존 state에 병합된다.
@@ -405,39 +405,103 @@ ReactDOM.render(
 
 
 ## [Handling Events](https://ko.reactjs.org/docs/handling-events.html)
-- 리액트에서 이벤트를 구현하는 것은 DOM 엘리먼트에서와 유사하다.
-- 차이점
-  - 리액트 이벤트 이름은 camelCase를 쓴다.
-  - event handler는 string보다 함수로 넘겨준다.
-    ```
-    // DOM
-    <button onclick="activateLasers()">
-      Activate Lasers
-    </button>
+- 리액트에서 이벤트를 구현하는 것은 DOM 엘리먼트에서와 유사하지만, 몇가지 차이점이 있다.
+- 리액트 이벤트 이름은 camelCase를 쓴다.
+- event handler는 string보다 함수로 넘겨준다.
+  ```
+  // DOM
+  <button onclick="activateLasers()">
+    Activate Lasers
+  </button>
 
-    // React
-    <button onClick={activateLasers}>
-      Activate Lasers
-    </button>
-    ```
-  - 기본동작을 방지하기 위해 `false`를 반환하는 대신 `preventDefault`를 사용한다.
-    ```
-    // DOM
-    <a href="#" onclick="console.log('The link was clicked.'); return false">
-      Click me
-    </a>
+  // React
+  <button onClick={activateLasers}>
+    Activate Lasers
+  </button>
+  ```
+- 기본동작을 방지하기 위해 `false`를 반환하는 대신 `preventDefault`를 사용한다.
+  ```
+  // DOM
+  <a href="#" onclick="console.log('The link was clicked.'); return false">
+    Click me
+  </a>
 
-    // React
-    function ActionLink() {
-      function handleClick(e) {
-        e.preventDefault();
-        console.log('The link was clicked.');
-      }
+  // React
+  function ActionLink() {
+    function handleClick(e) {
+      e.preventDefault();
+      console.log('The link was clicked.');
+    }
 
+    return (
+      <a href="#" onClick={handleClick}>
+        Click me
+      </a>
+    );
+  }
+  ```
+- 리스너 추가: 리액트에서는 DOM 생성 후 `addEventListener`를 호출하지 않고, 엘리먼트가 처음 렌더링될 때 리스너를 제공한다.
+  ```
+  class Toggle extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {isToggleOn: true};
+
+      // 콜백에서 `this`가 작동하려면 아래와 같이 바인딩 해주어야 합니다.
+      this.handleClick = this.handleClick.bind(this);
+    }
+
+    handleClick() {
+      this.setState(state => ({
+        isToggleOn: !state.isToggleOn
+      }));
+    }
+
+    render() {
       return (
-        <a href="#" onClick={handleClick}>
-          Click me
-        </a>
+        <button onClick={this.handleClick}>
+          {this.state.isToggleOn ? 'ON' : 'OFF'}
+        </button>
       );
     }
-    ```
+  }
+
+  ReactDOM.render(
+    <Toggle />,
+    document.getElementById('root')
+  );
+  ```
+  - `this` 바인딩: 메서드는 기본적으로 바인드 되어있지 않다. 바인딩하지 않으면 `this`는 `undefined`상태다.
+    - constructor 내에서 바인딩(정석적인 방법)
+      - `this.handleClick = this.handleClick.bind(this);`
+    - public class fields syntax 사용 (실험적인 방법)
+      - Babel을 통해 사용가능한 문법으로 바뀌는듯?
+      ```
+      handleClick = () => {
+        console.log('this is:', this);
+      }
+      ```
+    - 화살표 함수 사용 (ES6 문법 참고)
+      - 문제점!: 렌더링될 때마다 다른 콜백이 생성된다. 콜백이 하위 컴포넌트에 props로 전달되면 그 컴포넌트는 다시 렌더링을 수행할 수 있다. -> 이 문제를 피하려면 위의 방법을 사용하는 것이 좋다.
+      ```
+      class LoggingButton extends React.Component {
+        handleClick() {
+          console.log('this is:', this);
+        }
+
+        render() {
+          // 이 문법은 `this`가 handleClick 내에서 바인딩되도록 합니다.
+          return (
+            <button onClick={() => this.handleClick()}>
+              Click me
+            </button>
+          );
+        }
+      }
+      ```
+### 이벤트 핸들러에 인자 전달
+- `id`를 전달하고 싶을 때, 아래 두 줄 모두 정상적으로 작동한다.
+  ```
+  <button onClick={(e) => this.deleteRow(id, e)}>Delete Row</button>
+  <button onClick={this.deleteRow.bind(this, id)}>Delete Row</button>
+  ```
