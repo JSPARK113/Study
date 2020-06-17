@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TEST</title>
+</head>
+<body>
+  <h1>To-Do List</h1>
+  <form id="form-add-todo" class="form-add-todo">
+    <label for="todo">To do:</label>
+    <input type="text" id="new-todo-item" class="new-todo-item" name="todo" />
+    <input type="submit" id="add-todo-item" class="add-todo-item" value="add the todo" />
+  </form>
+  
+  <form id="form-todo-list">
+    <ul id="todo-list" class="todo-list">
+    </ul>
+  </form>
+  <!--css-->
+  <link rel="stylesheet" href="{{ url_for('static', filename='dist/main.css') }}">
+  <!--javascript-->
+  <script type="module" src="{{ url_for('static', filename='dist/main.js') }}"></script>
+
+</body>
+</html>

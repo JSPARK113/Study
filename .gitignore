@@ -41,6 +41,17 @@ wheels/
 .installed.cfg
 *.egg
 
+# Node.js
+node_modules/
+
+#macOS
+.DS_Store
+
+# Project Specific
+manifest.json
+/doc/_build/
+/doc/react/styleguide/
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
