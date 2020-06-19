@@ -32,3 +32,22 @@ if __name__ == '__main__':
 
 ### atom 플러그인 설치
 * [유용한 플러그인 모음](http://superjang.com/archives/3105)
+
+
+# Webpack
+
+* webpack은 static 파일 번들링 도구
+* 공식문서: https://webpack.js.org/concepts/
+
+### webpack을 통한 static 파일 빌드
+* `package.json` 파일이 있는 static 디렉토리 안에서 명령 실행
+  * `$ npm run build`: 현재 static 파일들을 한번 빌드
+  * `$ npm run start`: webpack 서버를 띄우고 static 파일에 변화가 있을 때마다 자동으로 빌드 실행
+* 기본개념
+	* requirements
+		* 필요 패키지 설치(npm 사용)
+		* `package.json` 구성
+	* Entry
+	* Output
+	* Loaders: 보통 번들링 전, 중간에 개별 파일단위로 영향
+	* Plugins: 번들링 단위로 영향, 보통 번들링 생성 시에 작동
